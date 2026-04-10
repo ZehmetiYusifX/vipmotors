@@ -15,6 +15,31 @@ type Beat = {
   end: number;
 };
 
+type Service = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+type Master = {
+  name: string;
+  role: string;
+  specialty: string;
+  experience: string;
+  image: string;
+};
+
+type Reason = {
+  title: string;
+  body: string;
+};
+
+type Review = {
+  name: string;
+  location: string;
+  quote: string;
+};
+
 const TOTAL_FRAMES = 240;
 const FRAME_PATHS = Array.from({ length: TOTAL_FRAMES }, (_, index) => {
   const frame = `${index + 1}`.padStart(3, "0");
@@ -24,62 +49,164 @@ const FRAME_PATHS = Array.from({ length: TOTAL_FRAMES }, (_, index) => {
 const BEATS: Beat[] = [
   {
     id: "hero",
-    eyebrow: "VIP MOTORS",
-    title: "Luks hərəkətdədir.",
+    eyebrow: "VIP MOTORS SERVIS",
+    title: "Avtomobiliniz etibarlı ustaların əlindədir.",
     body: [
-      "Hər səfərdən daha artığını gözləyənlər üçün premium avtomobil xidməti yenidən düşünülüb."
+      "Bakıda gündəlik texniki qulluqdan mürəkkəb diaqnostikaya qədər hər iş peşəkar servis axını ilə idarə olunur."
     ],
     align: "center",
     start: 0,
-    end: 0.16
+    end: 0.18
   },
   {
-    id: "engineering",
-    eyebrow: "Mühəndislik Baxışı",
-    title: "Mükəmməllik üçün dəqiqliklə qurulub.",
+    id: "diagnostic",
+    eyebrow: "Dəqiq diaqnostika",
+    title: "Problemi təxminlə yox, yoxlama ilə tapırıq.",
     body: [
-      "Hər avtomobil bənzərsiz performans və etibarlılıq üçün incəliklə qulluq olunur.",
-      "Mühərrikdən salona qədər hər detal qüsursuz sürüş təcrübəsi üçün hazırlanır."
+      "Mühərrik, sürətlər qutusu, elektronika və xəbərdarlıq kodları xüsusi avadanlıqla yoxlanılır.",
+      "Müştəriyə iş başlamazdan əvvəl nasazlığın səbəbi və görüləcək addımlar aydın şəkildə izah olunur."
     ],
     align: "left",
-    start: 0.16,
-    end: 0.4
+    start: 0.18,
+    end: 0.42
   },
   {
-    id: "experience",
-    eyebrow: "Xidmət Təcrübəsi",
-    title: "Sizə uyğunlaşan xidmət.",
+    id: "service",
+    eyebrow: "Gündəlik servis",
+    title: "Yağ dəyişikliyi, filtrlər, əyləc baxışı bir yerdə.",
     body: [
-      "Harada olursunuzsa olun, ehtiyac duyduğunuz anda yanınızdadır.",
-      "Rahat rezervasiya. Peşəkar sürücülər. Hava limanından tədbirlərə qədər hər yerə rahat çatın."
+      "Azərbaycan yolları və iqlimi nəzərə alınaraq servis intervalı, uyğun yağ seçimi və əsas aşınma nöqtələri yoxlanılır.",
+      "Tez təhvil, təmiz iş sahəsi və hər avtomobil üçün ayrıca servis qeydi təqdim olunur."
     ],
     align: "right",
-    start: 0.4,
-    end: 0.65
+    start: 0.42,
+    end: 0.68
   },
   {
-    id: "performance",
-    eyebrow: "Performans və Ustalıq",
-    title: "Hiss olunan performans.",
+    id: "repair",
+    eyebrow: "Təmir və bərpa",
+    title: "Sürətlər qutusu və mühərrik işləri təcrübəli ustalarla.",
     body: [
-      "Güc, idarəetmə və komfort hər səfərdə mükəmməl ahənglə işləyir.",
-      "Yumşaq sürətlənmə, səssiz hərəkət və kompromissiz lüks üçün hazırlanıb."
+      "Səs, titrəmə, ötürmə gecikməsi və yağ sızması kimi problemlər mərhələli şəkildə aradan qaldırılır.",
+      "Orijinala uyğun ehtiyat hissələri və keyfiyyətə nəzarət prosesi ilə nəticə sabit saxlanılır."
     ],
     align: "left",
-    start: 0.65,
-    end: 0.85
+    start: 0.68,
+    end: 0.88
   },
   {
     id: "cta",
-    eyebrow: "Yenidən Toplanma",
-    title: "Hər yolu yaşa. Daha azına razı olma.",
+    eyebrow: "VIP MOTORS",
+    title: "Servisə gəl, problemi rahatlıqla həll et.",
     body: [
-      "VIP MOTORS. Komfort üçün düşünülüb, mükəmməllik üçün qurulub.",
-      "Hava limanı, biznes görüşü və aradakı hər an üçün hazırlanıb."
+      "Yağ dəyişimi, kompüter diaqnostikası, sürətlər qutusu təmiri və periodik baxım üçün komandamız hazırdır.",
+      "Bakıda sürücülərin etibar etdiyi servis təcrübəsini bir nöqtədə topladıq."
     ],
     align: "center",
-    start: 0.85,
+    start: 0.88,
     end: 1
+  }
+];
+
+const SERVICES: Service[] = [
+  {
+    id: "01",
+    title: "Yağ və filtr dəyişimi",
+    body:
+      "Mühərrik yağı, hava, salon və yağ filtrlərinin dəyişimi istehsalçı tövsiyəsinə və avtomobilin yürüşünə uyğun aparılır."
+  },
+  {
+    id: "02",
+    title: "Sürətlər qutusu təmiri",
+    body:
+      "Avtomat və mexaniki sürətlər qutularında keçid problemi, zərbə, səs və yağ sızması üzrə diaqnostika və təmir."
+  },
+  {
+    id: "03",
+    title: "Kompüter diaqnostikası",
+    body:
+      "Check engine, sensor nasazlıqları, elektron blok və ümumi sistem xətaları peşəkar skaner vasitəsilə yoxlanılır."
+  },
+  {
+    id: "04",
+    title: "Əyləc və asqı baxışı",
+    body:
+      "Kolodka, disk, amortizator, şaravoy və ön hissə elementləri təhlükəsizlik baxımından yoxlanılır və dəyişdirilir."
+  },
+  {
+    id: "05",
+    title: "Mühərrik servisi",
+    body:
+      "Yağ sızması, qızma, səs və qeyri-sabit işləmə kimi hallar üçün mərhələli diaqnostika və təmir xidməti."
+  },
+  {
+    id: "06",
+    title: "Kondisioner və soyutma sistemi",
+    body:
+      "Freon doldurulması, radiator və soyutma sistemi yoxlaması, yay mövsümünə hazırlıq üçün tam servis."
+  }
+];
+
+const MASTERS: Master[] = [
+  {
+    name: "Rəşad Məmmədov",
+    role: "Baş mexanik",
+    specialty: "Mühərrik diaqnostikası və ağır mexaniki təmir",
+    experience: "12 il təcrübə",
+    image: "/team/ustad-rashad.svg"
+  },
+  {
+    name: "Elvin Həsənli",
+    role: "Sürətlər qutusu ustası",
+    specialty: "Avtomat transmissiya, yağ sızması və keçid problemləri",
+    experience: "9 il təcrübə",
+    image: "/team/ustad-elvin.svg"
+  },
+  {
+    name: "Murad Əliyev",
+    role: "Elektrik və diaqnostika ustası",
+    specialty: "Elektron sistemlər, check engine və sensor xətaları",
+    experience: "8 il təcrübə",
+    image: "/team/ustad-murad.svg"
+  }
+];
+
+const REASONS: Reason[] = [
+  {
+    title: "Azərbaycan yollarına uyğun servis yanaşması",
+    body:
+      "Tıxac, toz, yay istiliyi və gündəlik intensiv istifadə səbəbilə daha tez aşınan hissələrə xüsusi diqqət ayrılır."
+  },
+  {
+    title: "Şəffaf qiymətləndirmə",
+    body:
+      "İş başlamazdan əvvəl görüləcək xidmətlər izah olunur, lazımsız dəyişiklik təklif edilmir və müştəri təsdiqi olmadan iş genişləndirilmir."
+  },
+  {
+    title: "Sürətli qəbul və təhvil",
+    body:
+      "Növbə planlaması və servis axını elə qurulub ki, gündəlik qulluq işləri mümkün qədər operativ tamamlanıb avtomobil sahibinə təhvil verilsin."
+  }
+];
+
+const REVIEWS: Review[] = [
+  {
+    name: "Kamran, Bakı",
+    location: "Nərimanov",
+    quote:
+      "Yağ dəyişimi üçün getmişdim, əyləc və asqı ilə bağlı problemi də vaxtında aşkar etdilər. Ustalar həm izahlı, həm də səliqəli işləyir."
+  },
+  {
+    name: "Nihad, Bakı",
+    location: "Xətai",
+    quote:
+      "Sürətlər qutusunda gecikmə vardı. Diaqnostikadan sonra problemi dəqiq dedilər və boş yerə əlavə xərc çıxarmadılar."
+  },
+  {
+    name: "Aysel, Sumqayıt",
+    location: "Servis müştərisi",
+    quote:
+      "Müştəri ilə danışıq tərzi çox rahatdır. Hansı hissə niyə dəyişir, nə qədər vaxt çəkəcək, hamısını başa salırlar."
   }
 ];
 
@@ -112,9 +239,9 @@ export function ScrollStory() {
 
   const stats = useMemo(
     () => [
-      { label: "Dəstək xidməti", value: "24/7" },
-      { label: "Premium marşrutlar", value: "Hava limanından görüşə" },
-      { label: "Xidmət standartı", value: "İcraçı sinif incəliyi" }
+      { label: "Gündəlik qəbul", value: "Bakı üzrə operativ servis" },
+      { label: "Əsas xidmətlər", value: "Yağ, diaqnostika, transmissiya" },
+      { label: "Müştəri dəstəyi", value: "Aydın izah və servis qeydi" }
     ],
     []
   );
@@ -299,19 +426,19 @@ export function ScrollStory() {
             height={28}
             className="topbar__logo"
           />
-          <span>vip motors</span>
+          <span>vip motors servis</span>
         </div>
 
         <nav className="topbar__nav" aria-label="Primary">
           <a href="#overview">Baxış</a>
           <a href="#services">Xidmətlər</a>
-          <a href="#store">Mağaza</a>
-          <a href="#location">Ünvan</a>
-          <a href="#about">Haqqımızda</a>
+          <a href="#masters">Ustalarımız</a>
+          <a href="#advantages">Üstünlüklər</a>
+          <a href="#contact">Əlaqə</a>
         </nav>
 
         <a href="#contact" className="cta-button cta-button--small">
-          Rezerv et
+          Qəbul yazdır
         </a>
       </motion.header>
 
@@ -319,20 +446,6 @@ export function ScrollStory() {
         <div className="sequence-stage">
           <div className="sequence-stage__backdrop" />
           <canvas ref={canvasRef} className="sequence-canvas" />
-
-          <div className="sequence-hud">
-            <div className="sequence-hud__status">
-              <span>Kadr axını</span>
-              <strong>
-                {String(currentFrameRef.current + 1).padStart(3, "0")} /{" "}
-                {String(TOTAL_FRAMES).padStart(3, "0")}
-              </strong>
-            </div>
-            <div className="sequence-hud__status">
-              <span>Yüklənən kadr</span>
-              <strong>{loadedFrames}</strong>
-            </div>
-          </div>
 
           <div className="sequence-copy">
             {BEATS.map((beat) => {
@@ -369,7 +482,7 @@ export function ScrollStory() {
                   {beat.id === "cta" ? (
                     <div className="story-card__actions">
                       <a href="#contact" className="cta-button">
-                        Rezerv et
+                        Qəbul yazdır
                       </a>
                       <a href="#services" className="cta-button cta-button--ghost">
                         Xidmətlərə bax
@@ -393,11 +506,12 @@ export function ScrollStory() {
 
       <section className="hero-intro" id="about">
         <div className="hero-intro__copy">
-          <span className="eyebrow">Premium hərəkət memarlığı</span>
-          <h1>Hər səfər üçün yeni nəsil VIP xidmət standartı.</h1>
+          <span className="eyebrow">Bakıda peşəkar avtomobil servisi</span>
+          <h1>Gündəlik baxımdan ağır təmirə qədər etibarlı xidmət.</h1>
           <p>
-            VIP MOTORS sizə sadəcə avtomobil xidməti deyil, dəqiqlik, sakitlik
-            və yüksək səviyyəli qarşılama hissi təqdim edir.
+            VIP MOTORS Azərbaycan sürücüləri üçün rahat qəbul, aydın diaqnostika
+            və nəticəyə yönəlmiş usta işi təqdim edir. Bizim üçün əsas məsələ
+            avtomobili düzgün təmir edib sahibinə inamla təhvil verməkdir.
           </p>
         </div>
 
@@ -413,83 +527,100 @@ export function ScrollStory() {
 
       <section className="detail-grid" id="services">
         <div className="detail-grid__lead">
-          <span className="eyebrow">Xidmət istiqamətləri</span>
-          <h2>Lüks transfer xidməti, flaqman səviyyədə sazlanıb.</h2>
+          <span className="eyebrow">Əsas xidmətlər</span>
+          <h2>Servisimiz ən çox tələb olunan avtomobil işlərini bir məkanda toplayır.</h2>
         </div>
 
-        <div className="detail-grid__items">
-          <article className="detail-card">
-            <span>01</span>
-            <h3>Hava limanı dəqiqliyi</h3>
-            <p>
-              Qarşılama vaxtının dəqiq idarəsi, uçuş məlumatlarının izlənməsi
-              və hər çıxış üçün sakit, nəzarətli transfer axını.
-            </p>
-          </article>
-          <article className="detail-card">
-            <span>02</span>
-            <h3>Korporativ hərəkət</h3>
-            <p>
-              Vaxt, məxfilik və diqqəti yayındırmayan komfort üzərində
-              qurulmuş rəhbər transfer təcrübəsi.
-            </p>
-          </article>
-          <article className="detail-card">
-            <span>03</span>
-            <h3>Tədbir hazırlığı</h3>
-            <p>
-              Premium park təqdimatı, yüksək sürücü standartı və hər
-              dayanacaqda qonaqpərvərlik yönümlü xidmət.
-            </p>
-          </article>
+        <div className="detail-grid__items detail-grid__items--services">
+          {SERVICES.map((service) => (
+            <article className="detail-card" key={service.id}>
+              <span>{service.id}</span>
+              <h3>{service.title}</h3>
+              <p>{service.body}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="info-strip">
-        <article className="info-panel" id="store">
-          <span className="eyebrow">Magaza</span>
-          <h3>Seçilmiş əlavə imkanlar.</h3>
+      <section className="team-section" id="masters">
+        <div className="team-section__lead">
+          <span className="eyebrow">Ustalarımız</span>
+          <h2>VIP MOTORS komandası avtomobilinizi işin adamına həvalə edir.</h2>
           <p>
-            Su, cihaz enerji yüklənməsi, uşaq oturacağı və sərnişinə uyğun
-            fərdi seçimlər qapı açılmadan əvvəl hazırlanır.
+            Hər usta öz sahəsi üzrə ixtisaslaşıb və servis axınında konkret məsuliyyət daşıyır. Müştəri avtomobili qəbul olunandan təhvilə qədər proses təcrübəli komanda nəzarətində qalır.
           </p>
-        </article>
+        </div>
 
-        <article className="info-panel" id="location">
-          <span className="eyebrow">Unvan</span>
-          <h3>Bakı üzrə premium əhatə.</h3>
-          <p>
-            Hava limanı transferləri, şəhərdaxili görüşlər, hotellər və
-            özəl tədbirlər üçün mərkəzləşdirilmiş premium xidmət.
-          </p>
-        </article>
+        <div className="team-grid">
+          {MASTERS.map((master) => (
+            <article className="master-card" key={master.name}>
+              <div className="master-card__image-wrap">
+                <Image
+                  src={master.image}
+                  alt={master.name}
+                  width={520}
+                  height={620}
+                  className="master-card__image"
+                />
+              </div>
+              <div className="master-card__body">
+                <span className="eyebrow">{master.role}</span>
+                <h3>{master.name}</h3>
+                <p>{master.specialty}</p>
+                <strong>{master.experience}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
 
-        <article className="info-panel">
-          <span className="eyebrow">Haqqımızda</span>
-          <h3>Əsasda qonaqpərvərlik dayanır.</h3>
-          <p>
-            VIP MOTORS avtomobil intizamını, sürücü etiketi və sakit lüks
-            hissini vahid müştəri təcrübəsində birləşdirir.
-          </p>
-        </article>
+      <section className="info-strip" id="advantages">
+        {REASONS.map((reason) => (
+          <article className="info-panel" key={reason.title}>
+            <span className="eyebrow">Niyə biz</span>
+            <h3>{reason.title}</h3>
+            <p>{reason.body}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="testimonials-section">
+        <div className="detail-grid__lead">
+          <span className="eyebrow">Müştəri rəyləri</span>
+          <h2>Servisə gələn sürücülər ən çox dürüst yanaşmanı və nəticəni qeyd edir.</h2>
+        </div>
+
+        <div className="testimonials-grid">
+          {REVIEWS.map((review) => (
+            <article className="review-card" key={review.name}>
+              <p>"{review.quote}"</p>
+              <strong>{review.name}</strong>
+              <span>{review.location}</span>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="closing-panel" id="contact">
-        <span className="eyebrow">Standartı rezerv edin</span>
-        <h2>Komfort üçün düşünülüb. Mükəmməllik üçün qurulub.</h2>
+        <span className="eyebrow">Qəbul və əlaqə</span>
+        <h2>Avtomobilinizə servis vaxtıdırsa, VIP MOTORS komandası hazırdır.</h2>
         <p>
-          VIP MOTORS hər səfərə premium yanaşma gətirir: hava limanı
-          transferindən yüksək səviyyəli biznes hərəkətinə qədər.
+          Yağ dəyişimi, diaqnostika, sürətlər qutusu problemi və ümumi texniki
+          baxım üçün bizimlə əlaqə saxlayın. Servis qəbulunu öncədən planlayaq
+          və avtomobilinizi növbəyə uyğun qəbul edək.
         </p>
         <div className="story-card__actions">
           <a href="tel:+994000000000" className="cta-button">
-            Bizimlə əlaqə
+            +994 00 000 00 00
           </a>
-          <a href="mailto:booking@vipmotors.az" className="cta-button cta-button--ghost">
-            booking@vipmotors.az
+          <a href="mailto:service@vipmotors.az" className="cta-button cta-button--ghost">
+            service@vipmotors.az
           </a>
         </div>
       </section>
     </main>
   );
 }
+
+
+
