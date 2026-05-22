@@ -124,11 +124,7 @@ export default function DashboardPage() {
           <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-brand-500/15 blur-3xl" />
           <div className="absolute -left-10 -bottom-10 h-60 w-60 rounded-full bg-brand-700/15 blur-3xl" />
           <div className="relative">
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-              Sürücü paneli
-            </span>
-            <h1 className="mt-5 text-3xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
+            <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
               Salam, {user.fullName.split(" ")[0] || user.fullName}{" "}
               <span className="text-gradient">👋</span>
             </h1>

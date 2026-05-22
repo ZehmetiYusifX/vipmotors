@@ -106,7 +106,7 @@ function buildReply(data: Extracted, spec: OilSpec, confidence: "high" | "medium
 📊 Nəticənin etibarlılığı:
 ${conf} — ${reason}
 
-⚠️ Qeyd: Yağ almadan əvvəl istifadə kitabçası ilə təsdiqləyin.`;
+📞 Avtoservis ilə əlaqə saxlayın: +994 55 244 06 46`;
 }
 
 async function callOpenAI(messages: any[], maxTokens: number) {
@@ -214,7 +214,7 @@ Salam! VIP Motors Baku Yağ Seçici Bot nəticəsi:
 📊 Nəticənin etibarlılığı:
 ⚠️ Orta — Marka bazada yoxdur, ümumi mühərrik tipinə əsasən tövsiyə.
 
-⚠️ Qeyd: Yağ almadan əvvəl istifadə kitabçası ilə təsdiqləyin.
+📞 Avtoservis ilə əlaqə saxlayın: +994 55 244 06 46
 
 Avtomobil məlumatı:
 ${JSON.stringify(extracted, null, 2)}

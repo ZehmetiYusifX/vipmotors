@@ -10,6 +10,7 @@ interface RequestOptions {
   role?: Role;
   query?: Record<string, string | number | undefined>;
   signal?: AbortSignal;
+  formData?: FormData;
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
@@ -29,13 +30,13 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { method = "GET", body, role, query, signal } = options;
+  const { method = "GET", body, role, query, signal, formData } = options;
 
   const headers: Record<string, string> = {
     Accept: "application/json"
   };
 
-  if (body !== undefined) {
+  if (body !== undefined && !formData) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -46,12 +47,19 @@ export async function apiRequest<T>(
     }
   }
 
+  let requestBody: BodyInit | undefined;
+  if (formData) {
+    requestBody = formData;
+  } else if (body !== undefined) {
+    requestBody = JSON.stringify(body);
+  }
+
   let response: Response;
   try {
     response = await fetch(buildUrl(path, query), {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: requestBody,
       signal,
       mode: "cors",
       cache: "no-store"

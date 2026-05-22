@@ -98,11 +98,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
         </div>
 
         <div className="relative">
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Servis paneli
-          </span>
-          <h2 className="mt-6 text-4xl font-semibold tracking-tight leading-[1.1]">
+          <h2 className="text-4xl font-semibold tracking-tight leading-[1.1]">
             Müştəri axtarışı və{" "}
             <span className="text-gradient">servis qeydlərini</span> bir nöqtədən idarə et.
           </h2>

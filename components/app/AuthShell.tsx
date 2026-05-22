@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { Wrench, ArrowLeft } from "lucide-react";
 
 interface AuthShellProps {
-  eyebrow: string;
   title: string;
   subtitle: string;
   children: ReactNode;
@@ -12,7 +11,6 @@ interface AuthShellProps {
 }
 
 export function AuthShell({
-  eyebrow,
   title,
   subtitle,
   children,
@@ -51,11 +49,7 @@ export function AuthShell({
       <section className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-10">
         <div className="w-full max-w-xl">
           <div className="rounded-3xl glass-strong p-7 sm:p-10 shadow-card">
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-              {eyebrow}
-            </span>
-            <h1 className="mt-5 text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
               {title}
             </h1>
             <p className="mt-3 text-ink-300 leading-relaxed">{subtitle}</p>

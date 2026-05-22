@@ -13,6 +13,7 @@ import {
   Gauge,
   LayoutDashboard,
   LogOut,
+  Package,
   Phone,
   Plus,
   Search,
@@ -21,10 +22,14 @@ import {
 } from "lucide-react";
 
 import { AdminAuth } from "@/components/app/AdminAuth";
+import { InventoryPanel } from "@/components/admin/InventoryPanel";
+import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
 import { carServiceOps } from "@/lib/api/endpoints";
 import { ApiError, type MaintenanceRecord, type UserProfile } from "@/lib/api/types";
 import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
 import { cn } from "@/lib/cn";
+
+type AdminSection = "search" | "inventory" | "oils" | "customers" | "records" | "stats";
 
 type SearchState =
   | { status: "idle" }
@@ -48,12 +53,23 @@ function formatDate(iso: string | null) {
   }).format(date);
 }
 
-const NAV = [
-  { id: "search", label: "Müştəri axtarışı", Icon: Search, active: true },
-  { id: "customers", label: "Müştərilər", Icon: Users },
-  { id: "records", label: "Servis qeydləri", Icon: FileText },
-  { id: "stats", label: "Statistika", Icon: Gauge }
+const NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search; soon?: boolean }> = [
+  { id: "search", label: "Müştəri axtarışı", Icon: Search },
+  { id: "inventory", label: "Anbar", Icon: Package },
+  { id: "oils", label: "Yağ kataloqu", Icon: Droplet },
+  { id: "customers", label: "Müştərilər", Icon: Users, soon: true },
+  { id: "records", label: "Servis qeydləri", Icon: FileText, soon: true },
+  { id: "stats", label: "Statistika", Icon: Gauge, soon: true }
 ];
+
+const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = {
+  search: { eyebrow: "Servis əməliyyatları", title: "Müştəri axtarışı" },
+  inventory: { eyebrow: "Anbar idarəsi", title: "Məhsullar" },
+  oils: { eyebrow: "Kataloq idarəsi", title: "Motor yağları" },
+  customers: { eyebrow: "Servis əməliyyatları", title: "Müştərilər" },
+  records: { eyebrow: "Servis əməliyyatları", title: "Servis qeydləri" },
+  stats: { eyebrow: "Servis əməliyyatları", title: "Statistika" }
+};
 
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
@@ -62,6 +78,7 @@ const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2"
 export default function AdminPage() {
   const { status: authStatus, saveSession, logout } = useServiceAuth();
 
+  const [activeSection, setActiveSection] = useState<AdminSection>("search");
   const [plate, setPlate] = useState("");
   const [search, setSearch] = useState<SearchState>({ status: "idle" });
 
@@ -176,24 +193,31 @@ export default function AdminPage() {
           <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
             İdarəetmə
           </div>
-          {NAV.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                item.active
-                  ? "bg-brand-500/10 text-brand-200 border border-brand-500/20"
-                  : "text-ink-300 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <item.Icon className="h-4 w-4" />
-              {item.label}
-              {!item.active && (
-                <span className="ml-auto text-[10px] text-ink-500 font-mono">soon</span>
-              )}
-            </button>
-          ))}
+          {NAV.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => !item.soon && setActiveSection(item.id)}
+                disabled={item.soon}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-brand-500/10 text-brand-200 border border-brand-500/20"
+                    : item.soon
+                      ? "text-ink-400 cursor-not-allowed"
+                      : "text-ink-300 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <item.Icon className="h-4 w-4" />
+                {item.label}
+                {item.soon && (
+                  <span className="ml-auto text-[10px] text-ink-500 font-mono">soon</span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="p-3 border-t border-white/5">
@@ -221,10 +245,10 @@ export default function AdminPage() {
               </Link>
               <div>
                 <div className="text-[11px] uppercase tracking-[0.18em] text-ink-400">
-                  Servis əməliyyatları
+                  {SECTION_TITLE[activeSection].eyebrow}
                 </div>
                 <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-                  Müştəri axtarışı
+                  {SECTION_TITLE[activeSection].title}
                 </h1>
               </div>
             </div>
@@ -259,15 +283,21 @@ export default function AdminPage() {
         </header>
 
         <div className="flex-1 px-4 sm:px-8 py-8 space-y-6">
+          {activeSection === "inventory" && (
+            <InventoryPanel onUnauthorized={logout} />
+          )}
+
+          {activeSection === "oils" && (
+            <OilCatalogPanel onUnauthorized={logout} />
+          )}
+
+          {activeSection === "search" && (
+          <>
           {/* Hero / lead */}
           <section className="rounded-2xl border-hairline bg-linear-to-br from-ink-900/80 to-ink-900/40 p-6 sm:p-8 relative overflow-hidden">
             <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand-500/10 blur-3xl" />
             <div className="relative max-w-2xl">
-              <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300">
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                İş axını
-              </span>
-              <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
                 Müştərini plaka ilə tap, servis qeydini bir kliklə yarat.
               </h2>
               <p className="mt-3 text-ink-300">
@@ -607,6 +637,8 @@ export default function AdminPage() {
               </div>
             </section>
           </div>
+          </>
+          )}
         </div>
       </div>
     </main>

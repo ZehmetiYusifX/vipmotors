@@ -17,7 +17,6 @@ import {
   MapPin,
   Clock,
   ShieldCheck,
-  Sparkles,
   ChevronRight,
   Menu,
   X,
@@ -59,18 +58,9 @@ function Instagram({ className }: { className?: string }) {
 }
 
 import { AuthNav } from "./landing/AuthNav";
+import { OilsPreview } from "./landing/OilsPreview";
 import ChatWidget from "@/components/ChatWidget";
 import { cn } from "@/lib/cn";
-
-type Beat = {
-  id: string;
-  eyebrow: string;
-  title: string;
-  body: string;
-  align: "left" | "right" | "center";
-  start: number;
-  end: number;
-};
 
 type Service = {
   id: string;
@@ -85,60 +75,6 @@ type Review = {
   quote: string;
   rating: number;
 };
-
-const TOTAL_FRAMES = 240;
-const FRAME_PATHS = Array.from({ length: TOTAL_FRAMES }, (_, index) => {
-  const frame = `${index + 1}`.padStart(3, "0");
-  return `/sequence/ezgif-frame-${frame}.jpg`;
-});
-
-const BEATS: Beat[] = [
-  {
-    id: "hero",
-    eyebrow: "VIP Motors Baku",
-    title: "Avtomobiliniz etibarlı ustaların əlində.",
-    body: "Gündəlik baxımdan ağır təmirə qədər — peşəkar servis axını, şəffaf qiymət, sürətli təhvil.",
-    align: "center",
-    start: 0,
-    end: 0.18
-  },
-  {
-    id: "diagnostic",
-    eyebrow: "Dəqiq diaqnostika",
-    title: "Problemi təxminlə yox, ölçü ilə tapırıq.",
-    body: "Mühərrik, transmissiya, elektronika və xəbərdarlıq kodları peşəkar skaner ilə yoxlanılır. İş başlamamış səbəb və addımlar izah olunur.",
-    align: "left",
-    start: 0.18,
-    end: 0.42
-  },
-  {
-    id: "service",
-    eyebrow: "Gündəlik servis",
-    title: "Yağ, filtr, əyləc — bir gündə hazır.",
-    body: "Azərbaycan yollarına və iqlimə uyğun servis intervalı. Təmiz iş sahəsi, ayrıca servis qeydi və sürətli təhvil.",
-    align: "right",
-    start: 0.42,
-    end: 0.68
-  },
-  {
-    id: "repair",
-    eyebrow: "Təmir və bərpa",
-    title: "Mühərrik və qutu işlərində 12 illik təcrübə.",
-    body: "Səs, titrəmə, ötürmə gecikməsi və yağ sızması mərhələli şəkildə həll olunur. Orijinala uyğun hissələr.",
-    align: "left",
-    start: 0.68,
-    end: 0.88
-  },
-  {
-    id: "cta",
-    eyebrow: "Hazır olduğunda",
-    title: "Servisə yaz, problemi rahat həll et.",
-    body: "Komandamız Bakıda sürücülərin etibar etdiyi servis təcrübəsini bir nöqtədə topladı.",
-    align: "center",
-    start: 0.88,
-    end: 1
-  }
-];
 
 const SERVICES: Service[] = [
   {
@@ -233,27 +169,9 @@ const MAPS_LINKS = {
   yandex: `https://yandex.com/maps/?pt=${LNG},${LAT}&z=17&l=map`
 };
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function getBeatOpacity(progress: number, beat: Beat) {
-  const entry = 0.07;
-  const exit = 0.08;
-  if (progress < beat.start || progress > beat.end) return 0;
-  const fadeIn = clamp((progress - beat.start) / entry, 0, 1);
-  const fadeOut = clamp((beat.end - progress) / exit, 0, 1);
-  return Math.min(fadeIn, fadeOut, 1);
-}
-
 export function ScrollStory() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const framesRef = useRef<HTMLImageElement[]>([]);
-  const currentFrameRef = useRef(0);
   const reducedMotion = useReducedMotion();
 
-  const [progress, setProgress] = useState(0);
   const [navSolid, setNavSolid] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -263,6 +181,7 @@ export function ScrollStory() {
     () => [
       { id: "overview", label: "Baxış" },
       { id: "services", label: "Xidmətlər" },
+      { id: "oils", label: "Yağlar" },
       { id: "reviews", label: "Rəylər" },
       { id: "contact", label: "Əlaqə" }
     ],
@@ -285,96 +204,8 @@ export function ScrollStory() {
   }, [reducedMotion]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    let mounted = true;
-
-    const drawFrame = (image: HTMLImageElement) => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      context.clearRect(0, 0, w, h);
-      context.fillStyle = "#050505";
-      context.fillRect(0, 0, w, h);
-      const scale = Math.min(w / image.width, h / image.height);
-      const dw = image.width * scale;
-      const dh = image.height * scale;
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
-      context.drawImage(image, (w - dw) / 2, (h - dh) / 2, dw, dh);
-    };
-
-    framesRef.current = FRAME_PATHS.map((path, index) => {
-      const image = new window.Image();
-      image.decoding = "async";
-      image.src = path;
-      image.onload = () => {
-        if (mounted && index === 0) drawFrame(image);
-      };
-      return image;
-    });
-
-    const handleResize = () => {
-      const active = framesRef.current[currentFrameRef.current] ?? framesRef.current[0];
-      if (active?.complete) drawFrame(active);
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      mounted = false;
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    const canvas = canvasRef.current;
-    if (!section || !canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    const drawFrame = (image: HTMLImageElement) => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      context.clearRect(0, 0, w, h);
-      context.fillStyle = "#050505";
-      context.fillRect(0, 0, w, h);
-      const scale = Math.min(w / image.width, h / image.height);
-      const dw = image.width * scale;
-      const dh = image.height * scale;
-      context.drawImage(image, (w - dw) / 2, (h - dh) / 2, dw, dh);
-    };
-
-    const update = () => {
-      const rect = section.getBoundingClientRect();
-      const scrollable = Math.max(section.offsetHeight - window.innerHeight, 1);
-      const raw = clamp(-rect.top / scrollable, 0, 1);
-      const next = clamp(Math.round(raw * (TOTAL_FRAMES - 1)), 0, TOTAL_FRAMES - 1);
-      setProgress(raw);
+    const onScroll = () => {
       setNavSolid(window.scrollY > 24);
-      const img = framesRef.current[next];
-      if (img?.complete && next !== currentFrameRef.current) {
-        currentFrameRef.current = next;
-        drawFrame(img);
-      } else if (next === 0 && img?.complete) {
-        drawFrame(img);
-      }
-
-      // Scroll-spy
       for (const link of NAV_LINKS) {
         const el = document.getElementById(link.id);
         if (!el) continue;
@@ -385,14 +216,9 @@ export function ScrollStory() {
         }
       }
     };
-
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, [NAV_LINKS]);
 
   useEffect(() => {
@@ -504,115 +330,48 @@ export function ScrollStory() {
         )}
       </motion.header>
 
-      {/* Scroll sequence */}
-      <section ref={sectionRef} className="relative h-[420vh]" id="overview">
-        <div className="sticky top-0 h-screen w-full overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-ink-950 via-transparent to-ink-950/80 z-10 pointer-events-none" />
-          <canvas ref={canvasRef} className="sequence-canvas" />
-
-          <div className="absolute inset-0 z-20 grid place-items-center px-4 sm:px-6 lg:px-8">
-            {BEATS.map((beat) => {
-              const opacity = getBeatOpacity(progress, beat);
-              const active = opacity > 0;
-              const align =
-                beat.align === "left"
-                  ? "items-start text-left"
-                  : beat.align === "right"
-                    ? "items-end text-right"
-                    : "items-center text-center";
-              return (
-                <motion.article
-                  key={beat.id}
-                  className={cn(
-                    "absolute max-w-2xl mx-auto flex flex-col gap-4",
-                    align,
-                    beat.align === "left" && "left-4 sm:left-10 lg:left-20 top-1/2 -translate-y-1/2",
-                    beat.align === "right" && "right-4 sm:right-10 lg:right-20 top-1/2 -translate-y-1/2",
-                    beat.align === "center" && "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  )}
-                  animate={{
-                    opacity,
-                    x:
-                      beat.align === "left"
-                        ? active ? 0 : -40
-                        : beat.align === "right"
-                          ? active ? 0 : 40
-                          : 0,
-                    y: active ? "-50%" : "calc(-50% + 28px)",
-                    filter: `blur(${active ? 0 : 8}px)`
-                  }}
-                  transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ pointerEvents: active ? "auto" : "none" }}
-                >
-                  <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300 border border-brand-500/20">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-                    {beat.eyebrow}
-                  </span>
-                  <h2 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-gradient">
-                    {beat.title}
-                  </h2>
-                  <p className="text-base sm:text-lg text-ink-200/90 max-w-xl leading-relaxed">
-                    {beat.body}
-                  </p>
-
-                  {beat.id === "hero" && (
-                    <div className="flex flex-wrap gap-3 mt-2">
-                      <a
-                        href={`tel:${PHONE_TEL}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-brand-500 hover:bg-brand-400 px-5 py-3 text-sm font-semibold text-white shadow-glow transition-all"
-                      >
-                        <Phone className="h-4 w-4" /> İndi zəng et
-                      </a>
-                      <a
-                        href="#services"
-                        className="inline-flex items-center gap-2 rounded-full glass px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-                      >
-                        Xidmətlərə bax <ArrowRight className="h-4 w-4" />
-                      </a>
-                    </div>
-                  )}
-
-                  {beat.id === "cta" && (
-                    <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                      <Link
-                        href="/register"
-                        className="inline-flex items-center gap-2 rounded-full bg-brand-500 hover:bg-brand-400 px-5 py-3 text-sm font-semibold text-white shadow-glow transition-all"
-                      >
-                        Avtomobili qeydiyyatdan keçir <ArrowRight className="h-4 w-4" />
-                      </Link>
-                      <a
-                        href={WHATSAPP_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full glass px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-                      >
-                        <WhatsApp className="h-4 w-4 text-emerald-400" /> WhatsApp
-                      </a>
-                    </div>
-                  )}
-                </motion.article>
-              );
-            })}
-
-            {/* Scroll hint */}
-            {progress < 0.05 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-ink-400 text-xs uppercase tracking-[0.3em]"
+      {/* Hero */}
+      <section className="relative h-screen w-full overflow-hidden" id="overview">
+        <video
+          className="absolute inset-0 h-full w-full object-cover hidden md:block"
+          src="/videos/hero.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+        />
+        <video
+          className="absolute inset-0 h-full w-full object-cover md:hidden"
+          src="/videos/mobilehero.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+        />
+        <div className="relative z-20 h-full grid place-items-center px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl flex flex-col gap-5 items-center text-center">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-gradient">
+              Avtomobiliniz etibarlı ustaların əlində.
+            </h1>
+            <p className="text-base sm:text-lg text-ink-200/90 max-w-xl leading-relaxed">
+              Gündəlik baxımdan ağır təmirə qədər — peşəkar servis axını, şəffaf qiymət, sürətli təhvil.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-2 justify-center">
+              <a
+                href={`tel:${PHONE_TEL}`}
+                className="inline-flex items-center gap-2 rounded-full bg-brand-500 hover:bg-brand-400 px-5 py-3 text-sm font-semibold text-white shadow-glow transition-all"
               >
-                Aşağı sürüş
-                <span className="h-8 w-px bg-gradient-to-b from-brand-400 to-transparent animate-pulse" />
-              </motion.div>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          <div className="absolute bottom-0 inset-x-0 z-20 h-0.5 bg-white/5">
-            <div
-              className="h-full bg-gradient-to-r from-brand-500 to-brand-300 origin-left"
-              style={{ transform: `scaleX(${progress})` }}
-            />
+                <Phone className="h-4 w-4" /> İndi zəng et
+              </a>
+              <a
+                href="#services"
+                className="inline-flex items-center gap-2 rounded-full glass px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              >
+                Xidmətlərə bax <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -637,10 +396,7 @@ export function ScrollStory() {
       <section className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32" id="about">
         <div className="grid lg:grid-cols-12 gap-10 items-end">
           <div className="lg:col-span-7">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-300 border-hairline">
-              Bakıda peşəkar avtomobil servisi
-            </span>
-            <h2 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05]">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05]">
               Gündəlik baxımdan ağır təmirə qədər{" "}
               <span className="text-gradient">etibarlı xidmət.</span>
             </h2>
@@ -680,10 +436,7 @@ export function ScrollStory() {
         <div className="absolute inset-0 grid-bg radial-fade opacity-60 pointer-events-none" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300">
-              Əsas xidmətlər
-            </span>
-            <h2 className="mt-5 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
+            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
               Servisimiz ən çox tələb olunan{" "}
               <span className="text-gradient">avtomobil işlərini</span> bir məkanda toplayır.
             </h2>
@@ -713,14 +466,13 @@ export function ScrollStory() {
         </div>
       </section>
 
+      <OilsPreview />
+
       {/* Reviews */}
       <section className="relative py-24 sm:py-32 bg-ink-900/30 border-y border-white/5" id="reviews">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-300 border-hairline">
-              Müştəri rəyləri
-            </span>
-            <h2 className="mt-5 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
+            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
               Sürücülər ən çox <span className="text-gradient">dürüst yanaşmanı</span> qeyd edir.
             </h2>
           </div>
@@ -766,10 +518,7 @@ export function ScrollStory() {
 
             <div className="relative grid lg:grid-cols-2 gap-12 items-center">
               <div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-brand-300">
-                  Qəbul və əlaqə
-                </span>
-                <h2 className="mt-5 text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
+                <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
                   Servis vaxtıdırsa, <br className="hidden sm:block" />
                   <span className="text-gradient">komandamız hazırdır.</span>
                 </h2>

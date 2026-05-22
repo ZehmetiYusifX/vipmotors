@@ -67,6 +67,62 @@ export interface CreateMaintenancePayload {
   serviceDate: string;
 }
 
+export interface Product {
+  id: number;
+  product: string;
+  partNumber: string;
+  brand: string;
+  price: number;
+  count: number;
+  model: string[];
+  similarProducts: string[];
+}
+
+export interface ProductPayload {
+  product: string;
+  partNumber: string;
+  brand: string;
+  price: number;
+  count: number;
+  model: string[];
+  similarProducts: string[];
+}
+
+export interface SellPayload {
+  partNumber: string;
+  count: number;
+}
+
+export interface MotorOil {
+  id: number;
+  productName: string;
+  viscosity: string;
+  oilType: string;
+  standardApproval: string;
+  specification: string;
+  description: string;
+  oilImage: string | null;
+  oilPrice: number | null;
+}
+
+export interface MotorOilPayload {
+  productName: string;
+  viscosity: string;
+  oilType: string;
+  standardApproval: string;
+  specification: string;
+  description: string;
+  oilPrice: number;
+}
+
+export interface MotorOilSearchQuery {
+  productName?: string;
+  viscosity?: string;
+  oilType?: string;
+  standardApproval?: string;
+  specification?: string;
+}
+
 export class ApiError extends Error {
   status: number;
   body: unknown;

@@ -110,7 +110,6 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="Sürücü qeydiyyatı"
       title="Avtomobilini platformaya əlavə et"
       subtitle="Profil, yağ izləmə və bütün servis tarixçəsi tək yerdə saxlanacaq."
       footer={

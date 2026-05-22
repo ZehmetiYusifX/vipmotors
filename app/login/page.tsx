@@ -42,7 +42,6 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      eyebrow="Sürücü kabineti"
       title="Plaka nömrəsi ilə daxil ol"
       subtitle="Avtomobilinin servis tarixçəsini və yağ məlumatlarını izlə."
       footer={
