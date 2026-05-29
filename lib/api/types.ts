@@ -72,6 +72,19 @@ export interface ResetPasswordPayload {
   newPassword: string;
 }
 
+export interface CarPayload {
+  plateNumber: string;
+  vinCode: string;
+  carBrand: string;
+  brandModel: string;
+  year: number;
+  firstRegisteredKm: number;
+  currentKm: number;
+  oilBrand: string | null;
+  oilType: string | null;
+  lastServiceDate: string | null;
+}
+
 export interface CarServiceCredentials {
   username: string;
   password: string;

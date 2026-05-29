@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
+  AlertTriangle,
   Calendar,
   Car,
   Droplet,
@@ -11,10 +12,16 @@ import {
   LogOut,
   Mail,
   MessageCircle,
+  Pencil,
   Phone,
+  Plus,
+  Trash2,
   Wrench
 } from "lucide-react";
 
+import { CarFormModal } from "@/components/dashboard/CarFormModal";
+import { userCarsApi } from "@/lib/api/endpoints";
+import { ApiError, type UserCar } from "@/lib/api/types";
 import { useUserAuth } from "@/lib/auth/UserAuthProvider";
 
 function formatKm(value: number) {
@@ -36,7 +43,10 @@ const NEXT_SERVICE_INTERVAL_KM = 10000;
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { status, user, logout } = useUserAuth();
+  const { status, user, refresh, logout } = useUserAuth();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingCar, setEditingCar] = useState<UserCar | null>(null);
+  const [carError, setCarError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -52,6 +62,53 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
+  const cars: UserCar[] = user.cars ?? [];
+  const primaryCar: UserCar | null =
+    cars[0] ??
+    (user.carBrand || user.brandModel
+      ? {
+          id: 0,
+          plateNumber: user.plateNumber,
+          vinCode: user.vinCode,
+          carBrand: user.carBrand ?? "",
+          brandModel: user.brandModel ?? "",
+          year: user.year ?? new Date().getFullYear(),
+          firstRegisteredKm: user.firstRegisteredKm ?? 0,
+          currentKm: user.currentKm ?? 0,
+          oilBrand: user.oilBrand,
+          oilType: user.oilType,
+          lastServiceDate: user.lastServiceDate
+        }
+      : null);
+
+  function openAdd() {
+    setEditingCar(null);
+    setCarError(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(car: UserCar) {
+    if (car.id === 0) {
+      setCarError("Bu avtomobil hələ profilə əlavə edilməyib. Yeni avtomobil kimi əlavə edin.");
+      return;
+    }
+    setEditingCar(car);
+    setCarError(null);
+    setModalOpen(true);
+  }
+
+  async function deleteCar(car: UserCar) {
+    if (car.id === 0) return;
+    if (!confirm(`${car.carBrand} ${car.brandModel} (${car.plateNumber}) silinsin?`)) return;
+    setCarError(null);
+    try {
+      await userCarsApi.remove(car.id);
+      await refresh();
+    } catch (err) {
+      setCarError(err instanceof ApiError ? err.message : "Silmək mümkün olmadı.");
+    }
+  }
+
   const displayName = user.fullName?.trim() || user.plateNumber || user.email || "Sürücü";
   const firstName =
     user.fullName?.trim().split(" ")[0] || user.plateNumber || user.email || "Sürücü";
@@ -63,8 +120,8 @@ export default function DashboardPage() {
     .join("")
     .toUpperCase();
 
-  const currentKm = user.currentKm ?? 0;
-  const firstRegisteredKm = user.firstRegisteredKm ?? 0;
+  const currentKm = primaryCar?.currentKm ?? 0;
+  const firstRegisteredKm = primaryCar?.firstRegisteredKm ?? 0;
   const kmSinceFirst = currentKm - firstRegisteredKm;
   const usedRatio = Math.min(
     100,
@@ -143,10 +200,10 @@ export default function DashboardPage() {
         {/* Quick stats */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Hazırkı yürüş", value: user.currentKm == null ? "—" : formatKm(user.currentKm), Icon: Gauge },
-            { label: "Növbəti servisə", value: formatKm(Math.max(0, kmLeft)), Icon: Wrench },
-            { label: "Son servis", value: formatDate(user.lastServiceDate), Icon: Calendar },
-            { label: "Buraxılış", value: user.year == null ? "—" : String(user.year), Icon: Car }
+            { label: "Hazırkı yürüş", value: primaryCar ? formatKm(primaryCar.currentKm) : "—", Icon: Gauge },
+            { label: "Növbəti servisə", value: primaryCar ? formatKm(Math.max(0, kmLeft)) : "—", Icon: Wrench },
+            { label: "Son servis", value: formatDate(primaryCar?.lastServiceDate ?? null), Icon: Calendar },
+            { label: "Avtomobil sayı", value: String(cars.length), Icon: Car }
           ].map((s) => (
             <div
               key={s.label}
@@ -174,8 +231,8 @@ export default function DashboardPage() {
                   Avtomobil profili
                 </span>
                 <h2 className="text-2xl font-semibold mt-1 tracking-tight">
-                  {user.carBrand || user.brandModel
-                    ? `${user.carBrand ?? ""} ${user.brandModel ?? ""}`.trim()
+                  {primaryCar
+                    ? `${primaryCar.carBrand} ${primaryCar.brandModel}`.trim() || "Avtomobil"
                     : "Avtomobil əlavə edilməyib"}
                 </h2>
               </div>
@@ -184,19 +241,19 @@ export default function DashboardPage() {
                   AZ
                 </span>
                 <span className="px-3 py-1.5 text-sm font-mono font-bold tracking-wider text-white">
-                  {user.plateNumber}
+                  {primaryCar?.plateNumber || user.plateNumber}
                 </span>
               </div>
             </div>
 
             <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-5">
               {[
-                { dt: "Buraxılış ili", dd: user.year ?? "—" },
-                { dt: "İlk qeydiyyat", dd: user.firstRegisteredKm == null ? "—" : formatKm(user.firstRegisteredKm) },
-                { dt: "Hazırkı yürüş", dd: user.currentKm == null ? "—" : formatKm(user.currentKm) },
+                { dt: "Buraxılış ili", dd: primaryCar?.year ?? "—" },
+                { dt: "İlk qeydiyyat", dd: primaryCar ? formatKm(primaryCar.firstRegisteredKm) : "—" },
+                { dt: "Hazırkı yürüş", dd: primaryCar ? formatKm(primaryCar.currentKm) : "—" },
                 { dt: "Telefon", dd: user.phoneNumber, Icon: Phone, href: `tel:${user.phoneNumber}` },
                 { dt: "Email", dd: user.email, Icon: Mail, href: `mailto:${user.email}` },
-                { dt: "Son servis", dd: formatDate(user.lastServiceDate) }
+                { dt: "Son servis", dd: formatDate(primaryCar?.lastServiceDate ?? null) }
               ].map((row) => (
                 <div key={row.dt}>
                   <dt className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
@@ -271,9 +328,9 @@ export default function DashboardPage() {
 
             <dl className="grid grid-cols-3 gap-3 text-center">
               {[
-                { dt: "Marka", dd: user.oilBrand || "—" },
-                { dt: "Tip", dd: user.oilType || "—" },
-                { dt: "Növbəti", dd: formatKm(nextServiceKm) }
+                { dt: "Marka", dd: primaryCar?.oilBrand || "—" },
+                { dt: "Tip", dd: primaryCar?.oilType || "—" },
+                { dt: "Növbəti", dd: primaryCar ? formatKm(nextServiceKm) : "—" }
               ].map((row) => (
                 <div key={row.dt} className="rounded-xl border-hairline bg-ink-900/60 p-3">
                   <dt className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
@@ -305,7 +362,7 @@ export default function DashboardPage() {
               </a>
             </div>
 
-            {user.lastServiceDate ? (
+            {primaryCar?.lastServiceDate ? (
               <ol className="relative space-y-4">
                 <div className="absolute left-3 top-2 bottom-2 w-px bg-white/5" />
                 <li className="relative flex items-start gap-4 pl-10">
@@ -314,16 +371,17 @@ export default function DashboardPage() {
                   </span>
                   <div className="flex-1 rounded-xl border-hairline bg-ink-900/60 p-4">
                     <strong className="block text-white">
-                      Yağ dəyişimi · {user.oilBrand || "Yağ"} {user.oilType ? `(${user.oilType})` : ""}
+                      Yağ dəyişimi · {primaryCar.oilBrand || "Yağ"}{" "}
+                      {primaryCar.oilType ? `(${primaryCar.oilType})` : ""}
                     </strong>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-400">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {formatDate(user.lastServiceDate)}
+                        {formatDate(primaryCar.lastServiceDate)}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Gauge className="h-3 w-3" />
-                        {user.currentKm == null ? "—" : formatKm(user.currentKm)}
+                        {formatKm(primaryCar.currentKm)}
                       </span>
                     </div>
                   </div>
@@ -340,8 +398,115 @@ export default function DashboardPage() {
               </div>
             )}
           </article>
+
+          {/* My cars */}
+          <article className="lg:col-span-3 rounded-2xl border-hairline bg-ink-900/40 p-6 sm:p-8">
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <div>
+                <span className="text-[11px] uppercase tracking-[0.18em] text-ink-400">
+                  Avtomobillərim
+                </span>
+                <h2 className="text-lg font-semibold mt-0.5">
+                  {cars.length > 0 ? `${cars.length} avtomobil` : "Hələ avtomobil əlavə edilməyib"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={openAdd}
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors"
+              >
+                <Plus className="h-4 w-4" /> Yeni
+              </button>
+            </div>
+
+            {carError && (
+              <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-sm text-red-200">
+                <AlertTriangle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+                <span>{carError}</span>
+              </div>
+            )}
+
+            {cars.length === 0 ? (
+              <div className="rounded-xl border-hairline border-dashed bg-ink-900/40 p-8 text-center">
+                <Car className="h-8 w-8 text-ink-500 mx-auto" />
+                <strong className="mt-3 block text-white">Avtomobil əlavə et</strong>
+                <p className="mt-1.5 text-sm text-ink-400 max-w-md mx-auto">
+                  Profilinə avtomobil əlavə etsən, servis tarixçəsi və yağ izləmə avtomatik
+                  o avtomobilə bağlanacaq.
+                </p>
+              </div>
+            ) : (
+              <ul className="grid sm:grid-cols-2 gap-4">
+                {cars.map((car) => (
+                  <li
+                    key={car.id}
+                    className="rounded-xl border-hairline bg-ink-900/60 p-4 flex flex-col gap-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
+                          {car.year}
+                        </div>
+                        <strong className="block text-white truncate text-base mt-0.5">
+                          {car.carBrand} {car.brandModel}
+                        </strong>
+                      </div>
+                      <span className="inline-flex items-stretch rounded-lg border-hairline bg-ink-950 overflow-hidden shrink-0">
+                        <span className="grid place-items-center px-1.5 bg-brand-500/15 text-brand-300 text-[9px] font-mono font-bold border-r border-white/5">
+                          AZ
+                        </span>
+                        <span className="px-2 py-1 text-xs font-mono font-bold tracking-wider text-white">
+                          {car.plateNumber}
+                        </span>
+                      </span>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                      <div>
+                        <dt className="text-ink-500">Yürüş</dt>
+                        <dd className="text-white font-medium">{formatKm(car.currentKm)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-500">Yağ</dt>
+                        <dd className="text-white font-medium truncate">
+                          {car.oilBrand || "—"}
+                          {car.oilType ? ` · ${car.oilType}` : ""}
+                        </dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-ink-500">Son servis</dt>
+                        <dd className="text-white font-medium">{formatDate(car.lastServiceDate)}</dd>
+                      </div>
+                    </dl>
+                    <div className="flex items-center justify-end gap-1 pt-2 border-t border-white/5">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(car)}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-ink-200 hover:bg-white/5 hover:text-white"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Redaktə
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteCar(car)}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Sil
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
         </div>
       </div>
+
+      <CarFormModal
+        open={modalOpen}
+        editing={editingCar}
+        onClose={() => setModalOpen(false)}
+        onSaved={refresh}
+      />
     </main>
   );
 }

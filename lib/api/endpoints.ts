@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import type {
   AuthResponse,
+  CarPayload,
   CarServiceCredentials,
   CreateMaintenancePayload,
   ForgotPasswordPayload,
@@ -14,6 +15,7 @@ import type {
   RegisterUserPayload,
   ResetPasswordPayload,
   SellPayload,
+  UserCar,
   UserProfile
 } from "./types";
 
@@ -43,6 +45,29 @@ export const userAuth = {
     return apiRequest<{ message: string }>("/api/v1/auth/reset-password", {
       method: "POST",
       body: payload
+    });
+  }
+};
+
+export const userCarsApi = {
+  add(payload: CarPayload) {
+    return apiRequest<UserCar>("/api/v1/users/me/cars", {
+      method: "POST",
+      role: "USER",
+      body: payload
+    });
+  },
+  update(carId: number, payload: CarPayload) {
+    return apiRequest<UserCar>(`/api/v1/users/me/cars/${carId}`, {
+      method: "PUT",
+      role: "USER",
+      body: payload
+    });
+  },
+  remove(carId: number) {
+    return apiRequest<void>(`/api/v1/users/me/cars/${carId}`, {
+      method: "DELETE",
+      role: "USER"
     });
   }
 };

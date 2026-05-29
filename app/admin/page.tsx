@@ -421,43 +421,63 @@ export default function AdminPage() {
                         </span>
                       </div>
 
-                      <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-4 p-5">
-                        {[
-                          { dt: "DQN", dd: customer.plateNumber, mono: true },
-                          {
-                            dt: "Avtomobil",
-                            dd: customer.carBrand || customer.brandModel
-                              ? `${customer.carBrand ?? ""} ${customer.brandModel ?? ""}`.trim()
-                              : "—"
-                          },
-                          { dt: "İl", dd: customer.year ?? "—" },
-                          { dt: "Yürüş", dd: customer.currentKm == null ? "—" : formatKm(customer.currentKm) },
-                          {
-                            dt: "Yağ",
-                            dd:
-                              (customer.oilBrand || "—") +
-                              (customer.oilType ? ` · ${customer.oilType}` : "")
-                          },
-                          {
-                            dt: "Son servis",
-                            dd: formatDate(customer.lastServiceDate)
-                          }
-                        ].map((row) => (
-                          <div key={row.dt}>
-                            <dt className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
-                              {row.dt}
-                            </dt>
-                            <dd
-                              className={cn(
-                                "mt-1 text-sm text-white",
-                                row.mono && "font-mono tracking-wider"
-                              )}
-                            >
-                              {row.dd}
-                            </dd>
+                      <div className="p-5 space-y-4">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
+                          Avtomobillər ({customer.cars?.length ?? 0})
+                        </div>
+                        {!customer.cars?.length ? (
+                          <div className="rounded-xl border-hairline border-dashed bg-ink-900/40 p-5 text-sm text-ink-400 text-center">
+                            Bu müştərinin profilində hələ avtomobil yoxdur.
                           </div>
-                        ))}
-                      </dl>
+                        ) : (
+                          <ul className="space-y-3">
+                            {customer.cars.map((car) => (
+                              <li
+                                key={car.id}
+                                className="rounded-xl border-hairline bg-ink-900/60 p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div className="min-w-0">
+                                    <div className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
+                                      {car.year}
+                                    </div>
+                                    <strong className="block text-white truncate text-sm mt-0.5">
+                                      {car.carBrand} {car.brandModel}
+                                    </strong>
+                                  </div>
+                                  <span className="inline-flex items-stretch rounded-lg border-hairline bg-ink-950 overflow-hidden shrink-0">
+                                    <span className="grid place-items-center px-1.5 bg-brand-500/15 text-brand-300 text-[9px] font-mono font-bold border-r border-white/5">
+                                      AZ
+                                    </span>
+                                    <span className="px-2 py-1 text-xs font-mono font-bold tracking-wider text-white">
+                                      {car.plateNumber}
+                                    </span>
+                                  </span>
+                                </div>
+                                <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs">
+                                  <div>
+                                    <dt className="text-ink-500">Yürüş</dt>
+                                    <dd className="text-white">{formatKm(car.currentKm)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-ink-500">Yağ</dt>
+                                    <dd className="text-white truncate">
+                                      {car.oilBrand || "—"}
+                                      {car.oilType ? ` · ${car.oilType}` : ""}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-ink-500">Son servis</dt>
+                                    <dd className="text-white">
+                                      {formatDate(car.lastServiceDate)}
+                                    </dd>
+                                  </div>
+                                </dl>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
