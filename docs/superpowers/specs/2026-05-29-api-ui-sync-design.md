@@ -201,6 +201,8 @@ resetPassword(payload: ResetPasswordPayload) {
 
 ### 4.6 `/register` səhifəsi
 
+**Prinsip:** Register backendlə **bire-bir** uyğun, **tək addımlı, tək məqsədli**. Yalnız identifikasiya üçün zəruri sahələr: email + plate + phone. `fullName`, `carBrand`, `brandModel`, `year`, `firstRegisteredKm`, `currentKm`, `lastServiceDate`, `vinCode`, `oilBrand`, `oilType` register-də **YOXDUR** — bunlar profilə sonradan, müvafiq səhifələrdən dolur (bax §4.6.1).
+
 **Hazırkı 2-addımlı wizard tamamilə silinir.** Yeni form 3 sahə + submit:
 
 | Sahə | Tip | Validasiya |
@@ -215,6 +217,30 @@ Submit axını:
 3. `router.push("/set-password?email=" + encodeURIComponent(email))`
 
 Mövcud `AuthShell` reuse olunur. Stepper UI silinir. Password input, car sahələri silinir.
+
+### 4.6.1 Register-dən kənar sahələr — haradan dolur?
+
+Köhnə register formundakı sahələrin yeni mənbəyi:
+
+| Sahə | Hal-hazırda (köhnə UI) | Yeni mənbə | Faza |
+|---|---|---|---|
+| `fullName` | register payload | **Profil edit səhifəsi** (yeni — Faza 2) və ya admin operator daxil edir | 2 |
+| `carBrand`, `brandModel`, `year` | register payload | **`POST /users/me/cars`** (öz profilindən) və ya admin `createMaintenance` zamanı | 2 |
+| `firstRegisteredKm`, `currentKm` | register payload | Eyni — `cars/:carId` CRUD | 2 |
+| `lastServiceDate` | register payload | `createMaintenance` cavabından update olunur (backend mexanizmi) | 2 |
+| `oilBrand`, `oilType` | register payload | `createMaintenance` zamanı admin daxil edir | 2 |
+| `vinCode` | yox idi | `cars/:carId` CRUD | 2 |
+
+Bu o deməkdir ki, **Faza 1-dən sonra istifadəçinin `cars[]` boş olacaq və profil yarımçıq görünəcək** — bu Faza 2-yə qədər keçici vəziyyətdir. Dashboard bu boş halı zərif idarə etməlidir (köhnə flat sahələr backend-də mövcud deyilsə "—" göstərir; artıq belə göstərir).
+
+### 4.6.2 Backend gap (yeni risk)
+
+Postman kolleksiyasında **`fullName` üçün set/update endpoint-i yoxdur**. Yalnız `cars/:carId` CRUD mövcuddur. Bu deməkdir ki:
+
+- Ya backend-də `PUT /users/me` (və ya analoji) endpoint-i var, amma Postman-də göstərilməyib — backend təsdiq tələb olunur (yeni risk **R7**, bax §9)
+- Ya da `fullName` register-dən sonra dəyişdirilə bilmir; o halda Faza 1 register-də backend `email`/`phoneNumber`-dan default fullName yaradır, sonra fullName immutable qalır — UI bu fərziyyəni göstərməlidir
+
+Faza 2 spec-i hazırlanmamış R7 cavab tapmalıdır.
 
 ### 4.7 `/login` səhifəsi
 
@@ -310,9 +336,10 @@ Backend təsdiqindən sonra bu sənəd yenilənə bilər.
 
 - `app/dashboard/page.tsx` — flat sahələrdən cars[]-a keçir
 - `app/admin/page.tsx` — müştəri lookup-da cars[] siyahısı
-- Yeni: car CRUD UI (modal və ya səhifə)
-- `lib/api/endpoints.ts` — `userApi.addCar`, `userApi.updateCar`, `userApi.removeCar`
-- `lib/api/types.ts` — `AddCarPayload`, `UpdateCarPayload`
+- Yeni: car CRUD UI (modal və ya səhifə) — istifadəçinin **öz profilindən car əlavə/redaktə etmə**
+- Yeni: profil edit səhifəsi (`/dashboard/profile` və ya modal) — `fullName` və digər immutable olmayan sahələri redaktə (R7 cavabından sonra)
+- `lib/api/endpoints.ts` — `userApi.addCar`, `userApi.updateCar`, `userApi.removeCar`, (şərtlə) `userApi.updateProfile`
+- `lib/api/types.ts` — `AddCarPayload`, `UpdateCarPayload`, (şərtlə) `UpdateProfilePayload`
 
 ### 5.3 UX qərarları (Faza 2 spec-ində dəqiqləşdiriləcək)
 
@@ -398,6 +425,7 @@ Product modeli backendlə tam paralel olsun: `category`, `shelf`, `crossReferenc
 | R4 | `ProductCategory` enum tam siyahısı nədir? | 3 |
 | R5 | Motor oil update üçün multipart yoxsa JSON? | 4 |
 | R6 | Wallet pass user-aware-dir? Authentication tələb edirmi? | 5 |
+| R7 | `fullName` (və digər profil sahələri) backend-də necə update olunur? `PUT /users/me` Postman-də yoxdur — gizli endpoint, yoxsa immutable? | 1→2 |
 
 ## 10. Verifikasiya yolu
 
