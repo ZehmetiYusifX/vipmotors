@@ -159,8 +159,11 @@ export default function AdminPage() {
   }
 
   const customer = search.status === "found" ? search.customer : null;
+  const customerDisplayName = customer
+    ? customer.fullName?.trim() || customer.plateNumber
+    : "";
   const initials = customer
-    ? customer.fullName
+    ? (customer.fullName ?? "")
         .split(" ")
         .filter(Boolean)
         .slice(0, 2)
@@ -298,11 +301,11 @@ export default function AdminPage() {
             <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand-500/10 blur-3xl" />
             <div className="relative max-w-2xl">
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
-                Müştərini plaka ilə tap, servis qeydini bir kliklə yarat.
+                Müştərini dövlət qeydiyyat nişanı ilə tap, servis qeydini bir kliklə yarat.
               </h2>
               <p className="mt-3 text-ink-300">
-                Plaka nömrəsini daxil et, avtomobil profilini yoxla və yağ/servis
-                qeydini əlavə et.
+                DQN-ni daxil edin, avtomobil profilini yoxlayın və yağ/servis
+                qeydini əlavə edin.
               </p>
             </div>
           </section>
@@ -314,7 +317,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between gap-4 mb-5">
                   <div>
                     <span className="text-[11px] uppercase tracking-[0.18em] text-ink-400">
-                      Plaka ilə axtarış
+                      DQN ilə axtarış
                     </span>
                     <h3 className="text-lg font-semibold mt-0.5">Müştəri tap</h3>
                   </div>
@@ -331,7 +334,7 @@ export default function AdminPage() {
                       value={plate}
                       onChange={(e) => setPlate(e.target.value.toUpperCase())}
                       placeholder="10-AA-001"
-                      aria-label="Plaka nömrəsi"
+                      aria-label="Dövlət qeydiyyat nişanı"
                       spellCheck={false}
                       className="w-full bg-transparent px-4 py-3 text-white font-mono tracking-wider placeholder:text-ink-500 outline-none"
                     />
@@ -356,7 +359,7 @@ export default function AdminPage() {
                     <div className="rounded-xl border-hairline border-dashed bg-ink-900/40 p-6 text-center">
                       <Car className="h-8 w-8 text-ink-500 mx-auto" />
                       <div className="mt-3 font-medium text-white">
-                        Başlamaq üçün plaka daxil et
+                        Başlamaq üçün DQN daxil edin
                       </div>
                       <p className="mt-1 text-sm text-ink-400">
                         Müştərinin avtomobil profili və yağ məlumatları burada görünəcək.
@@ -401,7 +404,7 @@ export default function AdminPage() {
                         </span>
                         <div className="flex-1 min-w-0">
                           <strong className="block text-white truncate">
-                            {customer.fullName}
+                            {customerDisplayName}
                           </strong>
                           <a
                             href={`tel:${customer.phoneNumber}`}
@@ -419,7 +422,7 @@ export default function AdminPage() {
 
                       <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-4 p-5">
                         {[
-                          { dt: "Plaka", dd: customer.plateNumber, mono: true },
+                          { dt: "DQN", dd: customer.plateNumber, mono: true },
                           {
                             dt: "Avtomobil",
                             dd: `${customer.carBrand} ${customer.brandModel}`
@@ -472,7 +475,7 @@ export default function AdminPage() {
                   </div>
                   <dl className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-x-5 gap-y-4">
                     {[
-                      { dt: "Plaka", dd: lastCreated.customerPlateNumber, mono: true },
+                      { dt: "DQN", dd: lastCreated.customerPlateNumber, mono: true },
                       {
                         dt: "Yağ",
                         dd: `${lastCreated.oilBrand} · ${lastCreated.oilType}`
@@ -518,12 +521,12 @@ export default function AdminPage() {
                     className="flex flex-col gap-4 disabled:opacity-60"
                   >
                     <label className="block">
-                      <span className={labelClass}>Plaka</span>
+                      <span className={labelClass}>DQN</span>
                       <input
                         type="text"
                         value={customer ? customer.plateNumber : ""}
                         readOnly
-                        placeholder="Əvvəl müştərini tap"
+                        placeholder="Əvvəl müştərini tapın"
                         className={cn(fieldClass, "font-mono tracking-wider")}
                       />
                     </label>

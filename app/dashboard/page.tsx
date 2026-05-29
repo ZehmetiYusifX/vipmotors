@@ -52,7 +52,9 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const initials = user.fullName
+  const displayName = user.fullName?.trim() || user.plateNumber;
+  const firstName = user.fullName?.trim().split(" ")[0] || user.plateNumber;
+  const initials = (user.fullName ?? "")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -102,7 +104,7 @@ export default function DashboardPage() {
                 {initials || "U"}
               </span>
               <div className="hidden sm:flex flex-col leading-tight text-left">
-                <strong className="text-xs text-white">{user.fullName}</strong>
+                <strong className="text-xs text-white">{displayName}</strong>
                 <span className="text-[10px] text-ink-400 font-mono">{user.plateNumber}</span>
               </div>
             </div>
@@ -125,7 +127,7 @@ export default function DashboardPage() {
           <div className="absolute -left-10 -bottom-10 h-60 w-60 rounded-full bg-brand-700/15 blur-3xl" />
           <div className="relative">
             <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
-              Salam, {user.fullName.split(" ")[0] || user.fullName}{" "}
+              Salam, {firstName}{" "}
               <span className="text-gradient">👋</span>
             </h1>
             <p className="mt-4 text-ink-300 max-w-2xl leading-relaxed">
@@ -327,8 +329,8 @@ export default function DashboardPage() {
                 <Wrench className="h-8 w-8 text-ink-500 mx-auto" />
                 <strong className="mt-3 block text-white">Hələ servis qeydi yoxdur.</strong>
                 <p className="mt-1.5 text-sm text-ink-400 max-w-md mx-auto">
-                  İlk dəfə servisə getdiyində usta plaka nömrən üzərindən qeyd
-                  yaradacaq və bu sahə avtomatik dolacaq.
+                  İlk dəfə servisə getdiyiniz zaman usta dövlət qeydiyyat nişanınız
+                  üzərindən qeyd yaradacaq və bu sahə avtomatik dolacaq.
                 </p>
               </div>
             )}

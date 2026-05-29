@@ -83,7 +83,8 @@ export function AuthNav() {
   }
 
   const { user } = state;
-  const initials = user.fullName
+  const displayName = user.fullName?.trim() || user.plateNumber;
+  const initials = (user.fullName ?? "")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -105,7 +106,7 @@ export function AuthNav() {
         </span>
         <span className="hidden sm:flex flex-col text-left leading-tight">
           <strong className="text-xs text-white font-semibold">
-            {user.fullName.split(" ")[0]}
+            {displayName.split(" ")[0]}
           </strong>
           <span className="text-[10px] text-ink-400 font-mono">{user.plateNumber}</span>
         </span>
@@ -124,7 +125,7 @@ export function AuthNav() {
         >
           <div className="p-4 border-b border-white/5">
             <strong className="block text-sm font-semibold text-white truncate">
-              {user.fullName}
+              {displayName}
             </strong>
             <span className="text-xs text-ink-400 truncate block">{user.email}</span>
           </div>
