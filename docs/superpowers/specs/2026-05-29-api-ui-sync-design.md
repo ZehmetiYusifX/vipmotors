@@ -214,7 +214,9 @@ resetPassword(payload: ResetPasswordPayload) {
 Submit axını:
 1. `userAuth.register({ email, plateNumber, phoneNumber })`
 2. Cavabdan `accessToken`/`refreshToken` → `setTokens("USER", tokens)`
-3. `router.push("/set-password?email=" + encodeURIComponent(email))`
+3. `router.push("/dashboard")` — istifadəçi token ilə avtomatik giriş edir; parolu sonradan "Parolu unutdum" axını ilə qoya bilər.
+
+**Qərar (qeyd):** OTP axını yalnız `/forgot-password` və `/reset-password`-da qalır. Register sonrası OTP istəmək istifadəçi üçün artıq friction-dır; tokens-lə birbaşa dashboard-a girilir, parol opsional sonradan qoyulur.
 
 Mövcud `AuthShell` reuse olunur. Stepper UI silinir. Password input, car sahələri silinir.
 

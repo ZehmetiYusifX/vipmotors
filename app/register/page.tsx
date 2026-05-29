@@ -39,7 +39,7 @@ export default function RegisterPage() {
         phoneNumber: phoneNumber.trim()
       });
       setTokens("USER", tokens);
-      router.push(`/set-password?email=${encodeURIComponent(email.trim())}`);
+      router.push("/dashboard");
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -54,7 +54,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       title="Qeydiyyatdan keç"
-      subtitle="Email, dövlət qeydiyyat nişanı və telefon ilə hesab yarat. Parolu növbəti addımda təyin edəcəksən."
+      subtitle="Email, dövlət qeydiyyat nişanı və telefon ilə hesab yarat."
       footer={
         <span>
           Artıq hesabın var?{" "}
