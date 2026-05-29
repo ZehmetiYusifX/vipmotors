@@ -10,6 +10,7 @@ import { userAuth } from "@/lib/api/endpoints";
 import { setTokens } from "@/lib/api/tokens";
 import { ApiError } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
+import { normalizePlate } from "@/lib/plate";
 
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
@@ -34,7 +35,7 @@ export default function RegisterPage() {
     try {
       const tokens = await userAuth.register({
         email: email.trim(),
-        plateNumber: plateNumber.trim().toUpperCase(),
+        plateNumber: normalizePlate(plateNumber),
         phoneNumber: phoneNumber.trim()
       });
       setTokens("USER", tokens);
@@ -86,8 +87,8 @@ export default function RegisterPage() {
             <input
               type="text"
               value={plateNumber}
-              onChange={(e) => setPlateNumber(e.target.value.toUpperCase())}
-              placeholder="10-AA-001"
+              onChange={(e) => setPlateNumber(normalizePlate(e.target.value))}
+              placeholder="10AA123"
               required
               spellCheck={false}
               className="w-full bg-transparent px-4 py-3 text-white font-mono tracking-wider placeholder:text-ink-500 outline-none"

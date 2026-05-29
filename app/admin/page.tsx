@@ -28,6 +28,7 @@ import { carServiceOps } from "@/lib/api/endpoints";
 import { ApiError, type MaintenanceRecord, type UserProfile } from "@/lib/api/types";
 import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
 import { cn } from "@/lib/cn";
+import { normalizePlate } from "@/lib/plate";
 
 type AdminSection = "search" | "inventory" | "oils" | "customers" | "records" | "stats";
 
@@ -106,7 +107,7 @@ export default function AdminPage() {
 
   async function runSearch(event?: React.FormEvent) {
     event?.preventDefault();
-    const trimmed = plate.trim().toUpperCase();
+    const trimmed = normalizePlate(plate);
     if (!trimmed) return;
     setSearch({ status: "loading", plate: trimmed });
     setLastCreated(null);
@@ -332,8 +333,8 @@ export default function AdminPage() {
                     <input
                       type="text"
                       value={plate}
-                      onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                      placeholder="10-AA-001"
+                      onChange={(e) => setPlate(normalizePlate(e.target.value))}
+                      placeholder="10AA123"
                       aria-label="Dövlət qeydiyyat nişanı"
                       spellCheck={false}
                       className="w-full bg-transparent px-4 py-3 text-white font-mono tracking-wider placeholder:text-ink-500 outline-none"
