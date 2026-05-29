@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   CarServiceCredentials,
   CreateMaintenancePayload,
+  ForgotPasswordPayload,
   LoginUserPayload,
   MaintenanceRecord,
   MotorOil,
@@ -11,6 +12,7 @@ import type {
   Product,
   ProductPayload,
   RegisterUserPayload,
+  ResetPasswordPayload,
   SellPayload,
   UserProfile
 } from "./types";
@@ -30,6 +32,18 @@ export const userAuth = {
   },
   me() {
     return apiRequest<UserProfile>("/api/v1/users/me", { role: "USER" });
+  },
+  forgotPassword(payload: ForgotPasswordPayload) {
+    return apiRequest<{ message: string }>("/api/v1/auth/forgot-password", {
+      method: "POST",
+      body: payload
+    });
+  },
+  resetPassword(payload: ResetPasswordPayload) {
+    return apiRequest<{ message: string }>("/api/v1/auth/reset-password", {
+      method: "POST",
+      body: payload
+    });
   }
 };
 

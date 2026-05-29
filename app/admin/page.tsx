@@ -425,10 +425,12 @@ export default function AdminPage() {
                           { dt: "DQN", dd: customer.plateNumber, mono: true },
                           {
                             dt: "Avtomobil",
-                            dd: `${customer.carBrand} ${customer.brandModel}`
+                            dd: customer.carBrand || customer.brandModel
+                              ? `${customer.carBrand ?? ""} ${customer.brandModel ?? ""}`.trim()
+                              : "—"
                           },
-                          { dt: "İl", dd: customer.year },
-                          { dt: "Yürüş", dd: formatKm(customer.currentKm) },
+                          { dt: "İl", dd: customer.year ?? "—" },
+                          { dt: "Yürüş", dd: customer.currentKm == null ? "—" : formatKm(customer.currentKm) },
                           {
                             dt: "Yağ",
                             dd:

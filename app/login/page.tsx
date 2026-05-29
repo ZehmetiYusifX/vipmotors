@@ -12,7 +12,7 @@ import { ApiError } from "@/lib/api/types";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [plateNumber, setPlateNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,10 +21,18 @@ export default function LoginPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!phoneNumber.trim()) {
+      setError("Telefon nömrəsini daxil edin.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Parol ən az 8 simvol olmalıdır.");
+      return;
+    }
     setSubmitting(true);
     try {
       const tokens = await userAuth.login({
-        plateNumber: plateNumber.trim().toUpperCase(),
+        phoneNumber: phoneNumber.trim(),
         password
       });
       setTokens("USER", tokens);
@@ -33,7 +41,7 @@ export default function LoginPage() {
       setError(
         err instanceof ApiError
           ? err.message
-          : "Daxil olmaq mümkün olmadı. Yenidən yoxlayın."
+          : "Daxil olmaq mümkün olmadı. Zəhmət olmasa yenidən yoxlayın."
       );
     } finally {
       setSubmitting(false);
@@ -42,7 +50,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      title="Plaka nömrəsi ilə daxil ol"
+      title="Telefon nömrən və parol ilə daxil ol"
       subtitle="Avtomobilinin servis tarixçəsini və yağ məlumatlarını izlə."
       footer={
         <span>
@@ -56,23 +64,17 @@ export default function LoginPage() {
       <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
         <label className="block">
           <span className="block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2">
-            Plaka nömrəsi
+            Telefon
           </span>
-          <div className="flex items-stretch rounded-xl border-hairline bg-ink-900/60 focus-within:border-brand-500/50 focus-within:bg-ink-900 transition-colors overflow-hidden">
-            <span className="grid place-items-center px-3 text-xs font-mono font-semibold text-brand-300 bg-brand-500/10 border-r border-white/5">
-              AZ
-            </span>
-            <input
-              type="text"
-              autoComplete="username"
-              placeholder="10-AA-001"
-              value={plateNumber}
-              onChange={(e) => setPlateNumber(e.target.value.toUpperCase())}
-              required
-              spellCheck={false}
-              className="w-full bg-transparent px-4 py-3 text-white font-mono tracking-wider placeholder:text-ink-500 outline-none"
-            />
-          </div>
+          <input
+            type="tel"
+            autoComplete="tel"
+            placeholder="+994 50 123 45 67"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            required
+            className="w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors"
+          />
         </label>
 
         <label className="block">
@@ -87,6 +89,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={8}
               className="w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 pr-12 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors"
             />
             <button
@@ -97,6 +100,14 @@ export default function LoginPage() {
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
+          </div>
+          <div className="mt-2 text-right">
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-brand-300 hover:text-brand-200"
+            >
+              Parolu unutmusan?
+            </Link>
           </div>
         </label>
 

@@ -62,7 +62,9 @@ export default function DashboardPage() {
     .join("")
     .toUpperCase();
 
-  const kmSinceFirst = user.currentKm - user.firstRegisteredKm;
+  const currentKm = user.currentKm ?? 0;
+  const firstRegisteredKm = user.firstRegisteredKm ?? 0;
+  const kmSinceFirst = currentKm - firstRegisteredKm;
   const usedRatio = Math.min(
     100,
     Math.max(
@@ -71,8 +73,8 @@ export default function DashboardPage() {
     )
   );
   const nextServiceKm =
-    user.currentKm + (NEXT_SERVICE_INTERVAL_KM - (kmSinceFirst % NEXT_SERVICE_INTERVAL_KM));
-  const kmLeft = nextServiceKm - user.currentKm;
+    currentKm + (NEXT_SERVICE_INTERVAL_KM - (kmSinceFirst % NEXT_SERVICE_INTERVAL_KM));
+  const kmLeft = nextServiceKm - currentKm;
 
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
@@ -140,10 +142,10 @@ export default function DashboardPage() {
         {/* Quick stats */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Hazırkı yürüş", value: formatKm(user.currentKm), Icon: Gauge },
+            { label: "Hazırkı yürüş", value: user.currentKm == null ? "—" : formatKm(user.currentKm), Icon: Gauge },
             { label: "Növbəti servisə", value: formatKm(Math.max(0, kmLeft)), Icon: Wrench },
             { label: "Son servis", value: formatDate(user.lastServiceDate), Icon: Calendar },
-            { label: "Buraxılış", value: String(user.year), Icon: Car }
+            { label: "Buraxılış", value: user.year == null ? "—" : String(user.year), Icon: Car }
           ].map((s) => (
             <div
               key={s.label}
@@ -171,7 +173,9 @@ export default function DashboardPage() {
                   Avtomobil profili
                 </span>
                 <h2 className="text-2xl font-semibold mt-1 tracking-tight">
-                  {user.carBrand} {user.brandModel}
+                  {user.carBrand || user.brandModel
+                    ? `${user.carBrand ?? ""} ${user.brandModel ?? ""}`.trim()
+                    : "Avtomobil əlavə edilməyib"}
                 </h2>
               </div>
               <div className="flex items-stretch rounded-xl border-hairline bg-ink-950 overflow-hidden shadow-card">
@@ -186,9 +190,9 @@ export default function DashboardPage() {
 
             <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-5">
               {[
-                { dt: "Buraxılış ili", dd: user.year },
-                { dt: "İlk qeydiyyat", dd: formatKm(user.firstRegisteredKm) },
-                { dt: "Hazırkı yürüş", dd: formatKm(user.currentKm) },
+                { dt: "Buraxılış ili", dd: user.year ?? "—" },
+                { dt: "İlk qeydiyyat", dd: user.firstRegisteredKm == null ? "—" : formatKm(user.firstRegisteredKm) },
+                { dt: "Hazırkı yürüş", dd: user.currentKm == null ? "—" : formatKm(user.currentKm) },
                 { dt: "Telefon", dd: user.phoneNumber, Icon: Phone, href: `tel:${user.phoneNumber}` },
                 { dt: "Email", dd: user.email, Icon: Mail, href: `mailto:${user.email}` },
                 { dt: "Son servis", dd: formatDate(user.lastServiceDate) }
@@ -318,7 +322,7 @@ export default function DashboardPage() {
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Gauge className="h-3 w-3" />
-                        {formatKm(user.currentKm)}
+                        {user.currentKm == null ? "—" : formatKm(user.currentKm)}
                       </span>
                     </div>
                   </div>

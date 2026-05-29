@@ -5,12 +5,10 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-export interface UserProfile {
+export interface UserCar {
   id: number;
   plateNumber: string;
-  fullName: string;
-  phoneNumber: string;
-  email: string;
+  vinCode: string | null;
   carBrand: string;
   brandModel: string;
   year: number;
@@ -19,6 +17,24 @@ export interface UserProfile {
   oilBrand: string | null;
   oilType: string | null;
   lastServiceDate: string | null;
+}
+
+export interface UserProfile {
+  id: number;
+  plateNumber: string;
+  fullName: string | null;
+  phoneNumber: string;
+  email: string;
+  vinCode: string | null;
+  carBrand: string | null;
+  brandModel: string | null;
+  year: number | null;
+  firstRegisteredKm: number | null;
+  currentKm: number | null;
+  oilBrand: string | null;
+  oilType: string | null;
+  lastServiceDate: string | null;
+  cars: UserCar[];
   role: Role;
 }
 
@@ -36,22 +52,24 @@ export interface MaintenanceRecord {
 }
 
 export interface RegisterUserPayload {
-  fullName: string;
   email: string;
-  password: string;
   plateNumber: string;
   phoneNumber: string;
-  carBrand: string;
-  brandModel: string;
-  year: number;
-  firstRegisteredKm: number;
-  currentKm: number;
-  lastServiceDate: string;
 }
 
 export interface LoginUserPayload {
-  plateNumber: string;
+  phoneNumber: string;
   password: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  otpCode: string;
+  newPassword: string;
 }
 
 export interface CarServiceCredentials {
