@@ -52,8 +52,9 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const displayName = user.fullName?.trim() || user.plateNumber;
-  const firstName = user.fullName?.trim().split(" ")[0] || user.plateNumber;
+  const displayName = user.fullName?.trim() || user.plateNumber || user.email || "Sürücü";
+  const firstName =
+    user.fullName?.trim().split(" ")[0] || user.plateNumber || user.email || "Sürücü";
   const initials = (user.fullName ?? "")
     .split(" ")
     .filter(Boolean)

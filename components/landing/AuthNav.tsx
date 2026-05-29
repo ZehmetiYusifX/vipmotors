@@ -83,7 +83,7 @@ export function AuthNav() {
   }
 
   const { user } = state;
-  const displayName = user.fullName?.trim() || user.plateNumber;
+  const displayName = user.fullName?.trim() || user.plateNumber || user.email || "Sürücü";
   const initials = (user.fullName ?? "")
     .split(" ")
     .filter(Boolean)

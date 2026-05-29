@@ -160,7 +160,7 @@ export default function AdminPage() {
 
   const customer = search.status === "found" ? search.customer : null;
   const customerDisplayName = customer
-    ? customer.fullName?.trim() || customer.plateNumber
+    ? customer.fullName?.trim() || customer.plateNumber || customer.email || "—"
     : "";
   const initials = customer
     ? (customer.fullName ?? "")
