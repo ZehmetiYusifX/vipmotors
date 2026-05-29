@@ -22,14 +22,29 @@ const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
 const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2";
 
+const COMMON_CATEGORIES = [
+  "ENGINE_OIL",
+  "BRAKE",
+  "FILTER",
+  "BATTERY",
+  "SUSPENSION",
+  "ELECTRICAL",
+  "BODY",
+  "TRANSMISSION",
+  "OTHER"
+];
+
 const EMPTY_FORM: ProductPayload = {
   product: "",
   partNumber: "",
   brand: "",
+  category: null,
   price: 0,
   count: 0,
+  shelf: null,
   model: [],
-  similarProducts: []
+  similarProducts: [],
+  crossReferenceOemEquivalents: []
 };
 
 function toFormState(p: Product | null): ProductPayload {
@@ -38,10 +53,13 @@ function toFormState(p: Product | null): ProductPayload {
     product: p.product,
     partNumber: p.partNumber,
     brand: p.brand,
+    category: p.category,
     price: p.price,
     count: p.count,
+    shelf: p.shelf,
     model: p.model ?? [],
-    similarProducts: p.similarProducts ?? []
+    similarProducts: p.similarProducts ?? [],
+    crossReferenceOemEquivalents: p.crossReferenceOemEquivalents ?? []
   };
 }
 
@@ -56,6 +74,7 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
   const [form, setForm] = useState<ProductPayload>({ ...EMPTY_FORM });
   const [modelInput, setModelInput] = useState("");
   const [similarInput, setSimilarInput] = useState("");
+  const [crossRefInput, setCrossRefInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -93,6 +112,7 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
     setForm({ ...EMPTY_FORM });
     setModelInput("");
     setSimilarInput("");
+    setCrossRefInput("");
     setSaveError(null);
     setLookupMsg(null);
     setModalOpen(true);
@@ -103,6 +123,7 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
     setForm(toFormState(p));
     setModelInput((p.model ?? []).join(", "));
     setSimilarInput((p.similarProducts ?? []).join(", "));
+    setCrossRefInput((p.crossReferenceOemEquivalents ?? []).join(", "));
     setSaveError(null);
     setLookupMsg(null);
     setModalOpen(true);
@@ -128,13 +149,17 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
         product: found.product ?? "",
         partNumber: found.partNumber ?? pn,
         brand: found.brand ?? "",
+        category: found.category ?? null,
         price: typeof found.price === "number" ? found.price : 0,
         count: typeof found.count === "number" ? found.count : 0,
+        shelf: found.shelf ?? null,
         model: found.model ?? [],
-        similarProducts: found.similarProducts ?? []
+        similarProducts: found.similarProducts ?? [],
+        crossReferenceOemEquivalents: found.crossReferenceOemEquivalents ?? []
       });
       setModelInput((found.model ?? []).join(", "));
       setSimilarInput((found.similarProducts ?? []).join(", "));
+      setCrossRefInput((found.crossReferenceOemEquivalents ?? []).join(", "));
       setLookupMsg({ kind: "ok", text: "Məlumat dolduruldu. Lazımi sahələri yoxlayın." });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -161,11 +186,20 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
       ...form,
       price: Number(form.price) || 0,
       count: Number(form.count) || 0,
+      shelf:
+        form.shelf == null || Number.isNaN(Number(form.shelf))
+          ? null
+          : Number(form.shelf),
+      category: form.category?.trim() || null,
       model: modelInput
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
       similarProducts: similarInput
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      crossReferenceOemEquivalents: crossRefInput
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
@@ -300,7 +334,9 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
                   <th className="px-4 py-3">Məhsul</th>
                   <th className="px-4 py-3">Part №</th>
                   <th className="px-4 py-3">Marka</th>
+                  <th className="px-4 py-3">Kateqoriya</th>
                   <th className="px-4 py-3 text-right">Qiymət</th>
+                  <th className="px-4 py-3 text-right">Rəf</th>
                   <th className="px-4 py-3 text-right">Stok</th>
                   <th className="px-4 py-3 text-right">Əməliyyat</th>
                 </tr>
@@ -311,7 +347,19 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
                     <td className="px-4 py-3 text-white font-medium">{p.product}</td>
                     <td className="px-4 py-3 font-mono text-ink-200">{p.partNumber}</td>
                     <td className="px-4 py-3 text-ink-300">{p.brand}</td>
+                    <td className="px-4 py-3">
+                      {p.category ? (
+                        <span className="inline-flex items-center rounded-full bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 text-[10px] font-mono font-semibold text-brand-300">
+                          {p.category}
+                        </span>
+                      ) : (
+                        <span className="text-ink-500">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right text-white">{p.price.toFixed(2)} ₼</td>
+                    <td className="px-4 py-3 text-right text-ink-300">
+                      {p.shelf ?? "—"}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <span
                         className={cn(
@@ -456,6 +504,23 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
                 />
               </div>
               <div>
+                <label className={labelClass}>Kateqoriya</label>
+                <input
+                  list="product-categories"
+                  className={fieldClass}
+                  value={form.category ?? ""}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, category: e.target.value.toUpperCase() || null }))
+                  }
+                  placeholder="ENGINE_OIL"
+                />
+                <datalist id="product-categories">
+                  {COMMON_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
                 <label className={labelClass}>Qiymət (₼)</label>
                 <input
                   type="number"
@@ -478,6 +543,22 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
                   onChange={(e) => setForm((f) => ({ ...f, count: Number(e.target.value) }))}
                 />
               </div>
+              <div>
+                <label className={labelClass}>Rəf № (anbar)</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={fieldClass}
+                  value={form.shelf ?? ""}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      shelf: e.target.value === "" ? null : Number(e.target.value)
+                    }))
+                  }
+                  placeholder="3"
+                />
+              </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Uyğun modellər (vergüllə ayır)</label>
                 <input
@@ -494,6 +575,15 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
                   value={similarInput}
                   onChange={(e) => setSimilarInput(e.target.value)}
                   placeholder="OF-54321"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>OEM ekvivalent kodlar (vergüllə)</label>
+                <input
+                  className={fieldClass}
+                  value={crossRefInput}
+                  onChange={(e) => setCrossRefInput(e.target.value)}
+                  placeholder="90915-YZZF1, 04152-YZZA1"
                 />
               </div>
 

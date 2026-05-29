@@ -103,20 +103,26 @@ export interface Product {
   product: string;
   partNumber: string;
   brand: string;
+  category: string | null;
   price: number;
   count: number;
+  shelf: number | null;
   model: string[];
   similarProducts: string[];
+  crossReferenceOemEquivalents: string[];
 }
 
 export interface ProductPayload {
   product: string;
   partNumber: string;
   brand: string;
+  category: string | null;
   price: number;
   count: number;
+  shelf: number | null;
   model: string[];
   similarProducts: string[];
+  crossReferenceOemEquivalents: string[];
 }
 
 export interface SellPayload {
