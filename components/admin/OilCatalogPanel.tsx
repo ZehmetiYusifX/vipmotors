@@ -129,7 +129,11 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
     setSaving(true);
     try {
       if (editing) {
-        await motorOilsApi.update(editing.id, payload);
+        if (image) {
+          await motorOilsApi.updateWithImage(editing.id, payload, image);
+        } else {
+          await motorOilsApi.update(editing.id, payload);
+        }
       } else if (image) {
         await motorOilsApi.createWithImage(payload, image);
       } else {

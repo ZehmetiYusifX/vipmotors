@@ -19,6 +19,7 @@ import {
   Wrench
 } from "lucide-react";
 
+import { AddToWalletButtons } from "@/components/dashboard/AddToWalletButtons";
 import { CarFormModal } from "@/components/dashboard/CarFormModal";
 import { userCarsApi } from "@/lib/api/endpoints";
 import { ApiError, type UserCar } from "@/lib/api/types";
@@ -477,6 +478,7 @@ export default function DashboardPage() {
                         <dd className="text-white font-medium">{formatDate(car.lastServiceDate)}</dd>
                       </div>
                     </dl>
+                    <AddToWalletButtons plateNumber={car.plateNumber} className="pt-1" />
                     <div className="flex items-center justify-end gap-1 pt-2 border-t border-white/5">
                       <button
                         type="button"

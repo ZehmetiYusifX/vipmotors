@@ -209,6 +209,22 @@ export const motorOilsApi = {
       body: payload
     });
   },
+  updateWithImage(id: number, payload: MotorOilPayload, image: File) {
+    const fd = new FormData();
+    fd.append("productName", payload.productName);
+    fd.append("viscosity", payload.viscosity);
+    fd.append("oilType", payload.oilType);
+    fd.append("standardApproval", payload.standardApproval);
+    fd.append("specification", payload.specification);
+    fd.append("description", payload.description);
+    fd.append("oilPrice", String(payload.oilPrice));
+    fd.append("oilImage", image);
+    return apiRequest<MotorOil>(`/api/v1/motor-oils/${id}`, {
+      method: "PUT",
+      role: "CAR_SERVICE",
+      formData: fd
+    });
+  },
   remove(id: number) {
     return apiRequest<void>(`/api/v1/motor-oils/${id}`, {
       method: "DELETE",
