@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { AuthShell } from "@/components/app/AuthShell";
+import { AuthAlert } from "@/components/app/auth/AuthAlert";
+import { AuthButton } from "@/components/app/auth/AuthButton";
+import { AuthField } from "@/components/app/auth/AuthField";
 import { userAuth } from "@/lib/api/endpoints";
 import { ApiError } from "@/lib/api/types";
-
-const fieldClass =
-  "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
-const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -19,6 +18,8 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const resetHref = `/reset-password?email=${encodeURIComponent(email.trim())}`;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -31,9 +32,7 @@ export default function ForgotPasswordPage() {
     try {
       await userAuth.forgotPassword({ email: email.trim() });
       setSent(true);
-      setTimeout(() => {
-        router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`);
-      }, 1500);
+      setTimeout(() => router.push(resetHref), 1500);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -58,57 +57,38 @@ export default function ForgotPasswordPage() {
       }
     >
       <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-        <label className="block">
-          <span className={labelClass}>Email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            placeholder="email@example.com"
-            className={fieldClass}
-            disabled={sent}
-          />
-        </label>
+        <AuthField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+          placeholder="email@example.com"
+          disabled={sent}
+        />
 
         {sent && (
-          <div
-            role="status"
-            className="flex items-start gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-sm text-emerald-200"
-          >
-            <CheckCircle2 className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-            <span>Email-i yoxla. Növbəti səhifəyə yönləndirilirsən…</span>
-          </div>
+          <AuthAlert variant="success">
+            <span className="block">
+              Təsdiq kodu{" "}
+              <span className="font-semibold text-white">{email.trim()}</span>{" "}
+              ünvanına göndərildi. Növbəti səhifəyə yönləndirilirsən…
+            </span>
+            <Link
+              href={resetHref}
+              className="mt-2 inline-flex items-center gap-1 font-semibold text-emerald-100 hover:text-white"
+            >
+              Reset-ə keç <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </AuthAlert>
         )}
 
-        {error && (
-          <div
-            role="alert"
-            aria-live="polite"
-            className="flex items-start gap-2.5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-3.5 text-sm text-brand-200"
-          >
-            <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
-        <button
-          type="submit"
-          disabled={submitting || sent}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold text-white shadow-glow transition-all"
-        >
-          {submitting ? (
-            <>
-              <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              Göndərilir…
-            </>
-          ) : (
-            <>
-              Kodu göndər <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </button>
+        <AuthButton loading={submitting} loadingText="Göndərilir…" disabled={sent}>
+          Kodu göndər
+        </AuthButton>
       </form>
     </AuthShell>
   );

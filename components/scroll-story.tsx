@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import Lenis from "lenis";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Wrench,
   Gauge,
@@ -71,7 +71,6 @@ type Service = {
 
 type Review = {
   name: string;
-  location: string;
   quote: string;
   rating: number;
 };
@@ -118,39 +117,37 @@ const SERVICES: Service[] = [
 const REVIEWS: Review[] = [
   {
     name: "Kamran",
-    location: "Nərimanov, Bakı",
     quote: "Yağ dəyişiminə getmişdim, əyləc problemini də vaxtında aşkar etdilər. Səliqəli iş.",
     rating: 5
   },
   {
     name: "Nihad",
-    location: "Xətai, Bakı",
     quote: "Sürətlər qutusunda gecikmə vardı. Problemi dəqiq dedilər və boş yerə xərc çıxmadı.",
     rating: 5
   },
   {
     name: "Aysel",
-    location: "Sumqayıt",
     quote: "Müştəri ilə danışıq tərzi çox rahatdır. Hansı hissə niyə dəyişir, hamısını izah edirlər.",
     rating: 5
   },
   {
     name: "Tural",
-    location: "Yasamal, Bakı",
     quote: "Diaqnostika dəqiqdir. Başqa yerdə tapa bilmədikləri xətanı burada həll etdilər.",
     rating: 5
   },
   {
     name: "Səbinə",
-    location: "Binəqədi, Bakı",
     quote: "Qiymət əvvəl deyilir, sonradan əlavə çıxmır. Bu, etibar yaradır.",
     rating: 5
   }
 ];
 
+const FOUNDING_YEAR = 1992;
+const YEARS_OF_EXPERIENCE = new Date().getFullYear() - FOUNDING_YEAR;
+
 const STATS = [
   { value: "5000+", label: "Servis edilən avtomobil" },
-  { value: "12", label: "İl təcrübə" },
+  { value: `${YEARS_OF_EXPERIENCE}`, label: "İl təcrübə" },
   { value: "98%", label: "Müştəri məmnuniyyəti" },
   { value: "24s", label: "Orta təhvil müddəti" }
 ];
@@ -159,11 +156,11 @@ const PHONE_DISPLAY = "+994 55 244 06 46";
 const PHONE_TEL = "+994552440646";
 const WHATSAPP_URL = `https://wa.me/${PHONE_TEL.replace(/\D/g, "")}`;
 const INSTAGRAM_URL = "https://www.instagram.com/vipmotors_baku/";
-const LAT = 40.390306;
-const LNG = 49.892306;
+const LAT = 40.3902138;
+const LNG = 49.8921322;
 const ADDRESS_LABEL = "VIP Motors Baku";
 const MAPS_LINKS = {
-  google: `https://www.google.com/maps/search/?api=1&query=${LAT},${LNG}`,
+  google: `https://www.google.com/maps?cid=562961876439446058`,
   apple: `https://maps.apple.com/?ll=${LAT},${LNG}&q=${encodeURIComponent(ADDRESS_LABEL)}`,
   waze: `https://www.waze.com/ul?ll=${LAT}%2C${LNG}&navigate=yes`,
   yandex: `https://yandex.com/maps/?pt=${LNG},${LAT}&z=17&l=map`
@@ -179,18 +176,47 @@ export function ScrollStory() {
 
   const NAV_LINKS = useMemo(
     () => [
-      { id: "overview", label: "Baxış" },
-      { id: "services", label: "Xidmətlər" },
-      { id: "oils", label: "Yağlar" },
-      { id: "reviews", label: "Rəylər" },
-      { id: "contact", label: "Əlaqə" }
+      { id: "overview", label: "Baxış", path: "/" },
+      { id: "services", label: "Xidmətlər", path: "/services" },
+      { id: "oils", label: "Kataloq", path: "/catalog" },
+      { id: "reviews", label: "Rəylər", path: "/reviews" },
+      { id: "contact", label: "Əlaqə", path: "/contact" }
     ],
     []
+  );
+
+  const lenisRef = useRef<Lenis | null>(null);
+
+  // Capture the entry path during render, before the scroll-spy effect can
+  // rewrite it to "/", so deep-link scrolling targets the right section.
+  const entryPathRef = useRef<string | null>(null);
+  if (entryPathRef.current === null) {
+    entryPathRef.current =
+      typeof window === "undefined" ? "/" : window.location.pathname;
+  }
+
+  const goToSection = useCallback(
+    (id: string, path: string) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (lenisRef.current) {
+          lenisRef.current.scrollTo(el, { offset: 0 });
+        } else {
+          el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+        }
+      }
+      setActiveSection(id);
+      if (window.location.pathname !== path) {
+        window.history.replaceState(window.history.state, "", path);
+      }
+    },
+    [reducedMotion]
   );
 
   useEffect(() => {
     if (reducedMotion) return;
     const lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+    lenisRef.current = lenis;
     let rafId = 0;
     const raf = (time: number) => {
       lenis.raf(time);
@@ -200,6 +226,7 @@ export function ScrollStory() {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      lenisRef.current = null;
     };
   }, [reducedMotion]);
 
@@ -212,6 +239,9 @@ export function ScrollStory() {
         const r = el.getBoundingClientRect();
         if (r.top <= 120 && r.bottom >= 120) {
           setActiveSection(link.id);
+          if (window.location.pathname !== link.path) {
+            window.history.replaceState(window.history.state, "", link.path);
+          }
           break;
         }
       }
@@ -220,6 +250,27 @@ export function ScrollStory() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [NAV_LINKS]);
+
+  // Deep-link: when the page loads on a section route (e.g. /catalog via
+  // rewrite), jump to that section so refresh / direct entry lands correctly.
+  useEffect(() => {
+    const target = NAV_LINKS.find(
+      (l) => l.path !== "/" && l.path === entryPathRef.current
+    );
+    if (!target) return;
+    const rafId = window.requestAnimationFrame(() => {
+      const el = document.getElementById(target.id);
+      if (el) {
+        if (lenisRef.current) lenisRef.current.scrollTo(el, { immediate: true });
+        else el.scrollIntoView({ behavior: "auto" });
+      }
+      setActiveSection(target.id);
+      window.history.replaceState(window.history.state, "", target.path);
+    });
+    return () => window.cancelAnimationFrame(rafId);
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileNavOpen ? "hidden" : "";
@@ -260,7 +311,11 @@ export function ScrollStory() {
             {NAV_LINKS.map((link) => (
               <a
                 key={link.id}
-                href={`#${link.id}`}
+                href={link.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToSection(link.id, link.path);
+                }}
                 className={cn(
                   "relative px-3 py-2 text-sm font-medium transition-colors rounded-lg",
                   activeSection === link.id
@@ -314,8 +369,12 @@ export function ScrollStory() {
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.id}
-                  href={`#${link.id}`}
-                  onClick={() => setMobileNavOpen(false)}
+                  href={link.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMobileNavOpen(false);
+                    goToSection(link.id, link.path);
+                  }}
                   className="flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium text-ink-200 hover:bg-white/5 hover:text-white"
                 >
                   {link.label}
@@ -366,7 +425,17 @@ export function ScrollStory() {
                 <Phone className="h-4 w-4" /> İndi zəng et
               </a>
               <a
-                href="#services"
+                href="/register"
+                className="inline-flex items-center gap-2 rounded-full bg-white text-ink-950 hover:bg-ink-100 px-5 py-3 text-sm font-semibold shadow-glow transition-all"
+              >
+                Qeydiyyatdan keç <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="/services"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToSection("services", "/services");
+                }}
                 className="inline-flex items-center gap-2 rounded-full glass px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
               >
                 Xidmətlərə bax <ArrowRight className="h-4 w-4" />
@@ -409,7 +478,7 @@ export function ScrollStory() {
           <div className="lg:col-span-5 grid grid-cols-1 gap-3">
             {[
               { label: "Gündəlik qəbul", value: "Bakı üzrə operativ servis", Icon: Clock },
-              { label: "Əsas xidmətlər", value: "Yağ, diaqnostika, transmissiya", Icon: Wrench },
+              { label: "Əsas xidmətlər", value: "Sürtkü yağları, çilingər işləri, mühərrik və transmissiya, ehtiyat hissələri", Icon: Wrench },
               { label: "Müştəri dəstəyi", value: "Aydın izah və servis qeydi", Icon: ShieldCheck }
             ].map((item) => (
               <div
@@ -500,7 +569,6 @@ export function ScrollStory() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white">{r.name}</div>
-                    <div className="text-xs text-ink-400">{r.location}</div>
                   </div>
                 </div>
               </article>
@@ -559,7 +627,7 @@ export function ScrollStory() {
                       Ünvan
                     </div>
                     <div className="text-white font-medium break-words">
-                      Bakı, Nərimanov r., H. Aslanov küç. 22
+                      31 Babək pr, Baku 1149
                     </div>
                     <div className="mt-1 text-xs text-brand-300 inline-flex items-center gap-1">
                       <Navigation className="h-3 w-3" /> Xəritədə aç
@@ -632,7 +700,14 @@ export function ScrollStory() {
             <ul className="mt-4 space-y-2 text-sm">
               {NAV_LINKS.map((link) => (
                 <li key={link.id}>
-                  <a href={`#${link.id}`} className="text-ink-300 hover:text-white">
+                  <a
+                    href={link.path}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      goToSection(link.id, link.path);
+                    }}
+                    className="text-ink-300 hover:text-white"
+                  >
                     {link.label}
                   </a>
                 </li>
@@ -646,7 +721,6 @@ export function ScrollStory() {
               <li><Link href="/login" className="text-ink-300 hover:text-white">Daxil ol</Link></li>
               <li><Link href="/register" className="text-ink-300 hover:text-white">Qeydiyyat</Link></li>
               <li><Link href="/dashboard" className="text-ink-300 hover:text-white">Sürücü kabineti</Link></li>
-              <li><Link href="/admin" className="text-ink-300 hover:text-white">Operator paneli</Link></li>
             </ul>
           </div>
 
@@ -659,14 +733,29 @@ export function ScrollStory() {
                   <Instagram className="h-3.5 w-3.5" /> @vipmotors_baku
                 </a>
               </li>
-              <li>Bakı, Nərimanov r.</li>
+              <li>31 Babək pr, Baku 1149</li>
             </ul>
           </div>
         </div>
         <div className="border-t border-white/5">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink-500">
             <div>© {new Date().getFullYear()} VIP Motors Baku. Bütün hüquqlar qorunur.</div>
-            <div>Bakı, Azərbaycan</div>
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              <span>Bakı, Azərbaycan</span>
+              <span aria-hidden="true" className="text-ink-700">·</span>
+              <span>
+                Bu sayt{" "}
+                <a
+                  href="https://codalov.co"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-ink-300 hover:text-white transition-colors"
+                >
+                  Codalov
+                </a>{" "}
+                tərəfindən hazırlanmışdır
+              </span>
+            </div>
           </div>
         </div>
       </footer>

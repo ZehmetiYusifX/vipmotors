@@ -76,7 +76,7 @@ function parseJson(text: string): Extracted | null {
 
 function formatLiters(n: number): string {
   if (n === 0) return "—";
-  return `${n.toFixed(1).replace(/\.0$/, "")} L (təxmini)`;
+  return `${n.toFixed(1).replace(/\.0$/, "")} L `;
 }
 
 function buildReply(data: Extracted, spec: OilSpec, confidence: "high" | "medium" | "low", reason: string): string {
@@ -208,7 +208,7 @@ Salam! VIP Motors Baku Yağ Seçici Bot nəticəsi:
 - SAE: [SAE]
 - Standart: [API/ACEA standartı]
 - Tip: Tam sintetik
-- Həcm: [litr] L (təxmini)
+- Həcm: [litr] L
 - Dəyişmə intervalı: 5000-8000 km
 
 📊 Nəticənin etibarlılığı:
@@ -219,7 +219,7 @@ Salam! VIP Motors Baku Yağ Seçici Bot nəticəsi:
 Avtomobil məlumatı:
 ${JSON.stringify(extracted, null, 2)}
 
-QAYDA: Həcmi həmişə "(təxmini)" ilə yaz. İntervalı həmişə "5000-8000 km" yaz. Tək rəqəm yazma.`;
+QAYDA: Həcmi həmişə yaz. İntervalı həmişə "5000-8000 km" yaz. Tək rəqəm yazma.`;
 
     const fallbackReply = await callOpenAI(
       [{ role: "user", content: fallbackPrompt }],

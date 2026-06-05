@@ -170,23 +170,27 @@ export function CarFormModal({ open, editing, onClose, onSaved }: CarFormModalPr
           <div>
             <label className={labelClass}>İlk qeydiyyat km</label>
             <input
-              type="number"
-              min={0}
-              required
+              type="text"
+              inputMode="numeric"
               className={fieldClass}
-              value={form.firstRegisteredKm}
-              onChange={(e) => update("firstRegisteredKm", Number(e.target.value))}
+              value={form.firstRegisteredKm ? String(form.firstRegisteredKm) : ""}
+              onChange={(e) =>
+                update("firstRegisteredKm", Number(e.target.value.replace(/\D/g, "")) || 0)
+              }
+              placeholder="60000"
             />
           </div>
           <div>
             <label className={labelClass}>Hazırkı km</label>
             <input
-              type="number"
-              min={0}
-              required
+              type="text"
+              inputMode="numeric"
               className={fieldClass}
-              value={form.currentKm}
-              onChange={(e) => update("currentKm", Number(e.target.value))}
+              value={form.currentKm ? String(form.currentKm) : ""}
+              onChange={(e) =>
+                update("currentKm", Number(e.target.value.replace(/\D/g, "")) || 0)
+              }
+              placeholder="85000"
             />
           </div>
           <div>

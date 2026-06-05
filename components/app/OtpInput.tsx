@@ -78,7 +78,7 @@ export function OtpInput({
           onPaste={handlePaste}
           disabled={disabled}
           aria-label={`Rəqəm ${i + 1}`}
-          className="h-12 w-10 sm:h-14 sm:w-12 text-center font-mono text-lg sm:text-xl text-white bg-ink-900/60 border-hairline rounded-xl outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors disabled:opacity-50"
+          className="h-12 w-10 sm:h-14 sm:w-12 text-center font-mono text-lg sm:text-xl text-white bg-ink-900/60 border-hairline rounded-xl outline-none focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/15 focus:bg-ink-900 transition-[border-color,background-color,box-shadow] duration-200 disabled:opacity-50"
         />
       ))}
     </div>

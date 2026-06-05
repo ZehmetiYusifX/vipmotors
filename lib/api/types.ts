@@ -53,8 +53,8 @@ export interface MaintenanceRecord {
 
 export interface RegisterUserPayload {
   email: string;
-  plateNumber: string;
   phoneNumber: string;
+  password: string;
 }
 
 export interface LoginUserPayload {

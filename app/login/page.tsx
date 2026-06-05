@@ -3,25 +3,29 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, AlertCircle, ArrowRight, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 
 import { AuthShell } from "@/components/app/AuthShell";
+import { AuthAlert } from "@/components/app/auth/AuthAlert";
+import { AuthButton } from "@/components/app/auth/AuthButton";
+import { PasswordField } from "@/components/app/auth/PasswordField";
+import { PhoneField } from "@/components/app/auth/PhoneField";
 import { userAuth } from "@/lib/api/endpoints";
 import { setTokens } from "@/lib/api/tokens";
 import { ApiError } from "@/lib/api/types";
+import { toFullPhone } from "@/lib/phone";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!phoneNumber.trim()) {
+    if (!phone) {
       setError("Telefon nömrəsini daxil edin.");
       return;
     }
@@ -32,7 +36,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const tokens = await userAuth.login({
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: toFullPhone(phone),
         password
       });
       setTokens("USER", tokens);
@@ -62,45 +66,25 @@ export default function LoginPage() {
       }
     >
       <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-        <label className="block">
-          <span className="block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2">
-            Telefon
-          </span>
-          <input
-            type="tel"
-            autoComplete="tel"
-            placeholder="+994 50 123 45 67"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            required
-            className="w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors"
-          />
-        </label>
+        <PhoneField
+          label="Telefon"
+          autoComplete="tel"
+          placeholder="12 3456789"
+          value={phone}
+          onChange={setPhone}
+          required
+        />
 
-        <label className="block">
-          <span className="block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2">
-            Parol
-          </span>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 pr-12 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-lg text-ink-400 hover:text-white hover:bg-white/5"
-              aria-label={showPassword ? "Parolu gizlət" : "Parolu göstər"}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+        <div>
+          <PasswordField
+            label="Parol"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+          />
           <div className="mt-2 text-right">
             <Link
               href="/forgot-password"
@@ -109,36 +93,13 @@ export default function LoginPage() {
               Parolu unutmusan?
             </Link>
           </div>
-        </label>
+        </div>
 
-        {error && (
-          <div
-            role="alert"
-            aria-live="polite"
-            className="flex items-start gap-2.5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-3.5 text-sm text-brand-200"
-          >
-            <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="group inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold text-white shadow-glow transition-all"
-        >
-          {submitting ? (
-            <>
-              <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              Daxil olunur…
-            </>
-          ) : (
-            <>
-              Daxil ol
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-            </>
-          )}
-        </button>
+        <AuthButton loading={submitting} loadingText="Daxil olunur…">
+          Daxil ol
+        </AuthButton>
 
         <div className="flex items-center gap-3 pt-2">
           <div className="flex-1 h-px bg-white/5" />

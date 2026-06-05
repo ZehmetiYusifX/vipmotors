@@ -42,11 +42,11 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
     event.preventDefault();
     setError(null);
 
+    if (password.length < 8) {
+      setError("Parol ən az 8 simvol olmalıdır.");
+      return;
+    }
     if (mode === "register") {
-      if (password.length < 6) {
-        setError("Parol ən az 6 simvol olmalıdır.");
-        return;
-      }
       if (password !== confirm) {
         setError("Parol təkrarı uyğun gəlmir.");
         return;
@@ -66,8 +66,8 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
         err instanceof ApiError
           ? err.message
           : mode === "login"
-            ? "Daxil olmaq mümkün olmadı."
-            : "Qeydiyyat alınmadı."
+            ? "Daxil olmaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin."
+            : "Qeydiyyat tamamlanmadı. Zəhmət olmasa yenidən cəhd edin."
       );
     } finally {
       setSubmitting(false);
@@ -103,7 +103,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
             <span className="text-gradient">servis qeydlərini</span> bir nöqtədən idarə et.
           </h2>
           <p className="mt-5 text-ink-300 leading-relaxed max-w-md">
-            Plaka ilə müştərini tap, yağ və servis məlumatlarını bir kliklə əlavə et.
+            Dövlət qeydiyyat nişanı ilə müştərini tapın, yağ və servis məlumatlarını bir kliklə əlavə edin.
             Operator komandası üçün xüsusi olaraq hazırlanıb.
           </p>
         </div>
@@ -194,7 +194,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={8}
                   className={cn(fieldClass, "pr-12")}
                 />
                 <button
@@ -217,7 +217,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   placeholder="••••••••"
                   className={fieldClass}
                 />

@@ -9,15 +9,12 @@ import {
   Car,
   CheckCircle2,
   Droplet,
-  FileText,
   Gauge,
-  LayoutDashboard,
   LogOut,
   Package,
   Phone,
   Plus,
   Search,
-  Users,
   Wrench
 } from "lucide-react";
 
@@ -30,7 +27,7 @@ import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
 import { cn } from "@/lib/cn";
 import { normalizePlate } from "@/lib/plate";
 
-type AdminSection = "search" | "inventory" | "oils" | "customers" | "records" | "stats";
+type AdminSection = "search" | "inventory" | "oils";
 
 type SearchState =
   | { status: "idle" }
@@ -54,22 +51,16 @@ function formatDate(iso: string | null) {
   }).format(date);
 }
 
-const NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search; soon?: boolean }> = [
+const NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
   { id: "search", label: "Müştəri axtarışı", Icon: Search },
   { id: "inventory", label: "Anbar", Icon: Package },
-  { id: "oils", label: "Yağ kataloqu", Icon: Droplet },
-  { id: "customers", label: "Müştərilər", Icon: Users, soon: true },
-  { id: "records", label: "Servis qeydləri", Icon: FileText, soon: true },
-  { id: "stats", label: "Statistika", Icon: Gauge, soon: true }
+  { id: "oils", label: "Kataloq", Icon: Droplet }
 ];
 
 const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = {
   search: { eyebrow: "Servis əməliyyatları", title: "Müştəri axtarışı" },
   inventory: { eyebrow: "Anbar idarəsi", title: "Məhsullar" },
-  oils: { eyebrow: "Kataloq idarəsi", title: "Motor yağları" },
-  customers: { eyebrow: "Servis əməliyyatları", title: "Müştərilər" },
-  records: { eyebrow: "Servis əməliyyatları", title: "Servis qeydləri" },
-  stats: { eyebrow: "Servis əməliyyatları", title: "Statistika" }
+  oils: { eyebrow: "Kataloq idarəsi", title: "Kataloq" }
 };
 
 const fieldClass =
@@ -203,22 +194,16 @@ export default function AdminPage() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => !item.soon && setActiveSection(item.id)}
-                disabled={item.soon}
+                onClick={() => setActiveSection(item.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive
                     ? "bg-brand-500/10 text-brand-200 border border-brand-500/20"
-                    : item.soon
-                      ? "text-ink-400 cursor-not-allowed"
-                      : "text-ink-300 hover:text-white hover:bg-white/5"
+                    : "text-ink-300 hover:text-white hover:bg-white/5"
                 )}
               >
                 <item.Icon className="h-4 w-4" />
                 {item.label}
-                {item.soon && (
-                  <span className="ml-auto text-[10px] text-ink-500 font-mono">soon</span>
-                )}
               </button>
             );
           })}

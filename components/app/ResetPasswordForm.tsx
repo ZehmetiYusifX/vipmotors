@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { OtpInput } from "@/components/app/OtpInput";
+import { AuthAlert } from "@/components/app/auth/AuthAlert";
+import { AuthButton } from "@/components/app/auth/AuthButton";
+import { AuthField } from "@/components/app/auth/AuthField";
+import { PasswordField } from "@/components/app/auth/PasswordField";
+import { labelClass } from "@/components/app/auth/fieldStyles";
 import { userAuth } from "@/lib/api/endpoints";
 import { ApiError } from "@/lib/api/types";
-import { cn } from "@/lib/cn";
 
-const fieldClass =
-  "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
-const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2";
+const RESEND_COOLDOWN = 30;
 
 interface ResetPasswordFormProps {
   initialEmail: string;
@@ -30,12 +31,18 @@ export function ResetPasswordForm({
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [resending, setResending] = useState(false);
   const [resentMessage, setResentMessage] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -54,9 +61,7 @@ export function ResetPasswordForm({
       setDone(true);
       setTimeout(() => router.push(redirectTo), 1500);
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Parol sıfırlanmadı."
-      );
+      setError(err instanceof ApiError ? err.message : "Parol sıfırlanmadı.");
     } finally {
       setSubmitting(false);
     }
@@ -72,6 +77,7 @@ export function ResetPasswordForm({
     try {
       await userAuth.forgotPassword({ email: email.trim() });
       setResentMessage("Yeni kod göndərildi.");
+      setCooldown(RESEND_COOLDOWN);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kod göndərilmədi.");
     } finally {
@@ -79,20 +85,26 @@ export function ResetPasswordForm({
     }
   }
 
+  const resendDisabled = resending || submitting || done || cooldown > 0;
+  const resendLabel = resending
+    ? "Göndərilir…"
+    : cooldown > 0
+      ? `Yenidən göndər (${cooldown}s)`
+      : "Yenidən göndər";
+
   return (
     <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-      <label className="block">
-        <span className={labelClass}>Email</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          readOnly={emailReadOnly}
-          autoComplete="email"
-          className={cn(fieldClass, emailReadOnly && "opacity-70 cursor-not-allowed")}
-        />
-      </label>
+      <AuthField
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        readOnly={emailReadOnly}
+        autoComplete="email"
+        hint="Təsdiq kodu bu email ünvanına göndərilib"
+        className={emailReadOnly ? "opacity-70 cursor-not-allowed" : undefined}
+      />
 
       <div>
         <span className={labelClass}>Təsdiq kodu</span>
@@ -102,10 +114,10 @@ export function ResetPasswordForm({
           <button
             type="button"
             onClick={resendCode}
-            disabled={resending || submitting || done}
-            className="font-medium text-brand-300 hover:text-brand-200 disabled:opacity-60"
+            disabled={resendDisabled}
+            className="font-medium text-brand-300 hover:text-brand-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {resending ? "Göndərilir…" : "Yenidən göndər"}
+            {resendLabel}
           </button>
         </div>
         {resentMessage && (
@@ -113,81 +125,41 @@ export function ResetPasswordForm({
         )}
       </div>
 
-      <label className="block">
-        <span className={labelClass}>Yeni parol</span>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-            placeholder="Ən az 8 simvol"
-            className={cn(fieldClass, "pr-12")}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-lg text-ink-400 hover:text-white hover:bg-white/5"
-            aria-label={showPassword ? "Parolu gizlət" : "Parolu göstər"}
-          >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-      </label>
+      <PasswordField
+        label="Yeni parol"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        minLength={8}
+        autoComplete="new-password"
+        placeholder="Ən az 8 simvol"
+        hint="Ən az 8 simvol"
+      />
 
-      <label className="block">
-        <span className={labelClass}>Parolu təkrarla</span>
-        <input
-          type={showPassword ? "text" : "password"}
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-          placeholder="Yenidən daxil et"
-          className={fieldClass}
-        />
-      </label>
+      <PasswordField
+        label="Parolu təkrarla"
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        required
+        minLength={8}
+        autoComplete="new-password"
+        placeholder="Yenidən daxil et"
+        error={
+          confirm.length > 0 && confirm !== password
+            ? "Parollar uyğun gəlmir."
+            : undefined
+        }
+      />
 
       {done && (
-        <div
-          role="status"
-          className="flex items-start gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-sm text-emerald-200"
-        >
-          <CheckCircle2 className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-          <span>Parol qoyuldu. Yönləndirilirsən…</span>
-        </div>
+        <AuthAlert variant="success">Parol qoyuldu. Yönləndirilirsən…</AuthAlert>
       )}
 
-      {error && (
-        <div
-          role="alert"
-          aria-live="polite"
-          className="flex items-start gap-2.5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-3.5 text-sm text-brand-200"
-        >
-          <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
-      <button
-        type="submit"
-        disabled={submitting || done}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold text-white shadow-glow transition-all"
-      >
-        {submitting ? (
-          <>
-            <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-            Yoxlanılır…
-          </>
-        ) : (
-          <>
-            Parolu qoy <ArrowRight className="h-4 w-4" />
-          </>
-        )}
-      </button>
+      <AuthButton loading={submitting} loadingText="Yoxlanılır…" disabled={done}>
+        Parolu qoy
+      </AuthButton>
 
       <div className="text-center text-xs text-ink-500">
         <Link href="/login" className="hover:text-ink-200">
