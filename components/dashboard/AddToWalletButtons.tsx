@@ -5,24 +5,25 @@ import { Info, Smartphone, Wallet } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 
-function passUrl(plateNumber: string, wallet: "apple" | "google") {
-  const params = new URLSearchParams({ plateNumber, wallet });
-  return `${API_BASE_URL}/wallet/pass?${params.toString()}`;
+function passUrl(plateNumber: string, brandModel: string) {
+  const params = new URLSearchParams({ plateNumber, brandModel });
+  return `${API_BASE_URL}/api/v1/wallet/pass?${params.toString()}`;
 }
 
 interface AddToWalletButtonsProps {
   plateNumber: string;
+  brandModel: string;
   className?: string;
 }
 
-export function AddToWalletButtons({ plateNumber, className }: AddToWalletButtonsProps) {
+export function AddToWalletButtons({ plateNumber, brandModel, className }: AddToWalletButtonsProps) {
   if (!plateNumber) return null;
 
   return (
     <div className={cn("flex flex-col gap-2.5", className)}>
       <div className="flex flex-col sm:flex-row gap-3">
         <a
-          href={passUrl(plateNumber, "apple")}
+          href={passUrl(plateNumber, brandModel)}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-ink-950 hover:bg-ink-100 px-5 py-3 text-sm font-semibold transition-colors"
@@ -31,7 +32,7 @@ export function AddToWalletButtons({ plateNumber, className }: AddToWalletButton
           Apple Wallet-ə əlavə et
         </a>
         <a
-          href={passUrl(plateNumber, "google")}
+          href={passUrl(plateNumber, brandModel)}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center justify-center gap-2 rounded-xl border-hairline bg-white/5 hover:bg-white/10 text-white px-5 py-3 text-sm font-semibold transition-colors"

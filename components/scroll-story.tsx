@@ -60,6 +60,7 @@ function Instagram({ className }: { className?: string }) {
 import { AuthNav } from "./landing/AuthNav";
 import { OilsPreview } from "./landing/OilsPreview";
 import ChatWidget from "@/components/ChatWidget";
+import { useUserSession } from "@/lib/auth/useUserSession";
 import { cn } from "@/lib/cn";
 
 type Service = {
@@ -186,6 +187,8 @@ export function ScrollStory() {
   );
 
   const lenisRef = useRef<Lenis | null>(null);
+  const heroRef = useRef<HTMLElement | null>(null);
+  const sessionStatus = useUserSession();
 
   // Capture the entry path during render, before the scroll-spy effect can
   // rewrite it to "/", so deep-link scrolling targets the right section.
@@ -229,6 +232,31 @@ export function ScrollStory() {
       lenisRef.current = null;
     };
   }, [reducedMotion]);
+
+  // Mobile (notably iOS Safari) pauses autoplaying/looping videos on
+  // backgrounding, scroll, or Low Power Mode and does not resume on its own.
+  // Force-replay the currently visible hero video on the relevant events.
+  useEffect(() => {
+    const resume = () => {
+      const videos = heroRef.current?.querySelectorAll("video");
+      videos?.forEach((v) => {
+        // offsetParent is null when the element is hidden (display:none),
+        // so we only re-trigger the video that the current viewport shows.
+        if (v.offsetParent === null) return;
+        if (v.paused) v.play().catch(() => {});
+      });
+    };
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("touchstart", resume, { passive: true });
+    window.addEventListener("scroll", resume, { passive: true });
+    return () => {
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("pageshow", resume);
+      window.removeEventListener("touchstart", resume);
+      window.removeEventListener("scroll", resume);
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -390,7 +418,7 @@ export function ScrollStory() {
       </motion.header>
 
       {/* Hero */}
-      <section className="relative h-screen w-full overflow-hidden" id="overview">
+      <section ref={heroRef} className="relative h-screen w-full overflow-hidden" id="overview">
         <video
           className="absolute inset-0 h-full w-full object-cover hidden md:block"
           src="/videos/hero.mp4"
@@ -424,12 +452,21 @@ export function ScrollStory() {
               >
                 <Phone className="h-4 w-4" /> İndi zəng et
               </a>
-              <a
-                href="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-white text-ink-950 hover:bg-ink-100 px-5 py-3 text-sm font-semibold shadow-glow transition-all"
-              >
-                Qeydiyyatdan keç <ArrowRight className="h-4 w-4" />
-              </a>
+              {sessionStatus === "authenticated" ? (
+                <a
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 rounded-full bg-white text-ink-950 hover:bg-ink-100 px-5 py-3 text-sm font-semibold shadow-glow transition-all"
+                >
+                  Profilə keç <ArrowRight className="h-4 w-4" />
+                </a>
+              ) : (
+                <a
+                  href="/register"
+                  className="inline-flex items-center gap-2 rounded-full bg-white text-ink-950 hover:bg-ink-100 px-5 py-3 text-sm font-semibold shadow-glow transition-all"
+                >
+                  Qeydiyyatdan keç <ArrowRight className="h-4 w-4" />
+                </a>
+              )}
               <a
                 href="/services"
                 onClick={(e) => {

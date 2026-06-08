@@ -110,7 +110,11 @@ export function CarsSection({
                   </dd>
                 </div>
               </dl>
-              <AddToWalletButtons plateNumber={car.plateNumber} className="pt-1" />
+              <AddToWalletButtons
+                plateNumber={car.plateNumber}
+                brandModel={car.brandModel}
+                className="pt-1"
+              />
               <div className="flex items-center justify-end gap-1 border-t border-white/5 pt-2">
                 <button
                   type="button"
