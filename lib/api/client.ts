@@ -2,7 +2,7 @@ import { ApiError, type Role } from "./types";
 import { clearTokens, getTokens } from "./tokens";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://109.199.106.116:8080";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.vipmotors.az";
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";

@@ -461,10 +461,10 @@ export function ScrollStory() {
                 </a>
               ) : (
                 <a
-                  href="/register"
+                  href="/login"
                   className="inline-flex items-center gap-2 rounded-full bg-white text-ink-950 hover:bg-ink-100 px-5 py-3 text-sm font-semibold shadow-glow transition-all"
                 >
-                  Qeydiyyatdan keç <ArrowRight className="h-4 w-4" />
+                  Daxil ol <ArrowRight className="h-4 w-4" />
                 </a>
               )}
               <a
