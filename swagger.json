@@ -1,0 +1,2099 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "VipMotors Swagger",
+    "description": "API documentation for VipMotors Backend",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://109.199.106.116:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/api/v1/users/me/cars/{carId}": {
+      "put": {
+        "tags": [
+          "user-controller"
+        ],
+        "operationId": "updateMyCar",
+        "parameters": [
+          {
+            "name": "carId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCarResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "user-controller"
+        ],
+        "operationId": "removeMyCar",
+        "parameters": [
+          {
+            "name": "carId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}": {
+      "get": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "getById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/products/part-number/{partNumber}": {
+      "put": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "updateByPartNumber",
+        "parameters": [
+          {
+            "name": "partNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "deleteByPartNumber",
+        "parameters": [
+          {
+            "name": "partNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/motor-oils/{id}": {
+      "get": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "getById_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MotorOilSpecification"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "updateMultipart",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/MotorOilSpecificationMultipartRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MotorOilSpecificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MotorOilSpecification"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/cars": {
+      "post": {
+        "tags": [
+          "user-controller"
+        ],
+        "operationId": "addMyCar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCarResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "getAll",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/{partNumber}": {
+      "post": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "lookupByPartNumberPost",
+        "parameters": [
+          {
+            "name": "partNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/sell": {
+      "post": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "sell",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductSellRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSaleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/sales/{saleId}/confirm": {
+      "post": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "confirmSale",
+        "parameters": [
+          {
+            "name": "saleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSaleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/motor-oils": {
+      "get": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "getAll_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MotorOilSpecification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "create_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MotorOilSpecificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MotorOilSpecification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/motor-oils/image": {
+      "post": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "createMultipart",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/MotorOilSpecificationMultipartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MotorOilSpecification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/car-services/maintenances": {
+      "post": {
+        "tags": [
+          "car-maintenance-controller"
+        ],
+        "operationId": "createMaintenance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarMaintenanceCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarMaintenanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/car-services/auth/register": {
+      "post": {
+        "tags": [
+          "car-service-auth-controller"
+        ],
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarServiceRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/car-services/auth/login": {
+      "post": {
+        "tags": [
+          "car-service-auth-controller"
+        ],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarServiceLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "resetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "registerUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "login_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "forgotPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forget-password": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "forgotPassword_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/pass/image": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "createPassImage",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brandModel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/pass/image": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "createPassImage_1",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brandModel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/pass": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "createPass",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brandModel",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.apple.pkpass": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/pass": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "createPass_1",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brandModel",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.apple.pkpass": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/google/strip": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "googleWalletStripImage",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/google/strip": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "googleWalletStripImage_1",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/google/save": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "saveGoogleWalletPass",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/google/save": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "saveGoogleWalletPass_1",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/google/logo": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "googleWalletLogoImage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/google/logo": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "googleWalletLogoImage_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/google/link": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "googleWalletSaveLink",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/google/link": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "googleWalletSaveLink_1",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "walletPage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet": {
+      "get": {
+        "tags": [
+          "wallet-controller"
+        ],
+        "operationId": "walletPage_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "tags": [
+          "user-controller"
+        ],
+        "operationId": "getMyProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/search": {
+      "get": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "partNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/sales/pending": {
+      "get": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "getPendingSales",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductSaleResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/lookup/{partNumber}": {
+      "get": {
+        "tags": [
+          "product-controller"
+        ],
+        "operationId": "lookupByPartNumber",
+        "parameters": [
+          {
+            "name": "partNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/motor-oils/search": {
+      "get": {
+        "tags": [
+          "motor-oil-specification-controller"
+        ],
+        "operationId": "search_1",
+        "parameters": [
+          {
+            "name": "productName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "viscosity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "oilType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "standardApproval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "specification",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MotorOilSpecification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/car-services/customers": {
+      "get": {
+        "tags": [
+          "car-service-customer-controller"
+        ],
+        "operationId": "getCustomerByPlateNumber",
+        "parameters": [
+          {
+            "name": "plateNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserCarRequest": {
+        "type": "object",
+        "properties": {
+          "plateNumber": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 0
+          },
+          "vinCode": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "carBrand": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "brandModel": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstRegisteredKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "oilBrand": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "oilType": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "lastServiceDate": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "plateNumber"
+        ]
+      },
+      "UserCarResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "plateNumber": {
+            "type": "string"
+          },
+          "vinCode": {
+            "type": "string"
+          },
+          "carBrand": {
+            "type": "string"
+          },
+          "brandModel": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstRegisteredKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "oilBrand": {
+            "type": "string"
+          },
+          "oilType": {
+            "type": "string"
+          },
+          "lastServiceDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ProductRequest": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "minLength": 1
+          },
+          "partNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "brand": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ENGINE_OIL",
+              "OIL_FILTER",
+              "AIR_FILTER",
+              "FUEL_FILTER",
+              "CABIN_FILTER",
+              "BRAKE_PAD",
+              "BRAKE_DISC",
+              "SPARK_PLUG",
+              "BATTERY",
+              "TIRE",
+              "ACCESSORY",
+              "OTHER"
+            ]
+          },
+          "price": {
+            "type": "number"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shelf": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "model": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "similarProducts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "crossReferenceOemEquivalents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "partNumber",
+          "product"
+        ]
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "product": {
+            "type": "string"
+          },
+          "partNumber": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ENGINE_OIL",
+              "OIL_FILTER",
+              "AIR_FILTER",
+              "FUEL_FILTER",
+              "CABIN_FILTER",
+              "BRAKE_PAD",
+              "BRAKE_DISC",
+              "SPARK_PLUG",
+              "BATTERY",
+              "TIRE",
+              "ACCESSORY",
+              "OTHER"
+            ]
+          },
+          "price": {
+            "type": "number"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shelf": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "model": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "similarProducts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "crossReferenceOemEquivalents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MotorOilSpecificationMultipartRequest": {
+        "type": "object",
+        "properties": {
+          "productName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "viscosity": {
+            "type": "string"
+          },
+          "oilType": {
+            "type": "string"
+          },
+          "standardApproval": {
+            "type": "string"
+          },
+          "specification": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "oilPrice": {
+            "type": "number"
+          },
+          "oilImage": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "productName"
+        ]
+      },
+      "MotorOilSpecification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "viscosity": {
+            "type": "string"
+          },
+          "oilType": {
+            "type": "string"
+          },
+          "standardApproval": {
+            "type": "string"
+          },
+          "specification": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "oilImage": {
+            "type": "string"
+          },
+          "oilPrice": {
+            "type": "number"
+          }
+        }
+      },
+      "MotorOilSpecificationRequest": {
+        "type": "object",
+        "properties": {
+          "productName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "viscosity": {
+            "type": "string"
+          },
+          "oilType": {
+            "type": "string"
+          },
+          "standardApproval": {
+            "type": "string"
+          },
+          "specification": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "oilPrice": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "productName"
+        ]
+      },
+      "ProductSellRequest": {
+        "type": "object",
+        "properties": {
+          "partNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "partNumber"
+        ]
+      },
+      "ProductSaleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED"
+            ]
+          },
+          "partNumber": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestedBy": {
+            "type": "string"
+          },
+          "confirmedBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "product": {
+            "$ref": "#/components/schemas/Product"
+          }
+        }
+      },
+      "CarMaintenanceCreateRequest": {
+        "type": "object",
+        "properties": {
+          "plateNumber": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 0
+          },
+          "oilBrand": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "oilType": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "serviceKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "serviceDate": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "oilBrand",
+          "oilType",
+          "plateNumber",
+          "serviceKm"
+        ]
+      },
+      "CarMaintenanceResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "appUserId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userCarId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "appUserFullName": {
+            "type": "string"
+          },
+          "customerPlateNumber": {
+            "type": "string"
+          },
+          "carServiceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "carServiceUsername": {
+            "type": "string"
+          },
+          "oilBrand": {
+            "type": "string"
+          },
+          "oilType": {
+            "type": "string"
+          },
+          "serviceKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "serviceDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "CarServiceRegisterRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "password",
+          "username"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "CarServiceLoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "password",
+          "username"
+        ]
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "otpCode": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 6
+          },
+          "newPassword": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "email",
+          "newPassword",
+          "otpCode"
+        ]
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "phoneNumber": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 6
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "phoneNumber"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "password",
+          "phoneNumber"
+        ]
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "plateNumber": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "vinCode": {
+            "type": "string"
+          },
+          "carBrand": {
+            "type": "string"
+          },
+          "brandModel": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstRegisteredKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentKm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "oilBrand": {
+            "type": "string"
+          },
+          "oilType": {
+            "type": "string"
+          },
+          "lastServiceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "cars": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserCarResponse"
+            }
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "CAR_SERVICE",
+              "OWNER"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

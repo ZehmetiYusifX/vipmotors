@@ -15,19 +15,20 @@ import {
   Phone,
   Plus,
   Search,
+  ShieldCheck,
   Wrench
 } from "lucide-react";
 
 import { AdminAuth } from "@/components/app/AdminAuth";
 import { InventoryPanel } from "@/components/admin/InventoryPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
-import { carServiceOps } from "@/lib/api/endpoints";
+import { carServiceAuth, carServiceOps } from "@/lib/api/endpoints";
 import { ApiError, type MaintenanceRecord, type UserProfile } from "@/lib/api/types";
 import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
 import { cn } from "@/lib/cn";
 import { normalizePlate } from "@/lib/plate";
 
-type AdminSection = "search" | "inventory" | "oils";
+type AdminSection = "search" | "inventory" | "oils" | "register-service";
 
 type SearchState =
   | { status: "idle" }
@@ -51,16 +52,21 @@ function formatDate(iso: string | null) {
   }).format(date);
 }
 
-const NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
+const BASE_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
   { id: "search", label: "Müştəri axtarışı", Icon: Search },
   { id: "inventory", label: "Anbar", Icon: Package },
   { id: "oils", label: "Kataloq", Icon: Droplet }
 ];
 
+const OWNER_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
+  { id: "register-service", label: "Yeni Servis", Icon: ShieldCheck }
+];
+
 const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = {
   search: { eyebrow: "Servis əməliyyatları", title: "Müştəri axtarışı" },
   inventory: { eyebrow: "Anbar idarəsi", title: "Məhsullar" },
-  oils: { eyebrow: "Kataloq idarəsi", title: "Kataloq" }
+  oils: { eyebrow: "Kataloq idarəsi", title: "Kataloq" },
+  "register-service": { eyebrow: "Owner idarəsi", title: "Yeni Servis Qeydiyyatı" }
 };
 
 const fieldClass =
@@ -68,7 +74,7 @@ const fieldClass =
 const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2";
 
 export default function AdminPage() {
-  const { status: authStatus, saveSession, logout } = useServiceAuth();
+  const { status: authStatus, isOwner, saveSession, logout } = useServiceAuth();
 
   const [activeSection, setActiveSection] = useState<AdminSection>("search");
   const [plate, setPlate] = useState("");
@@ -83,6 +89,13 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [lastCreated, setLastCreated] = useState<MaintenanceRecord | null>(null);
+
+  const [regUsername, setRegUsername] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirm, setRegConfirm] = useState("");
+  const [regSubmitting, setRegSubmitting] = useState(false);
+  const [regError, setRegError] = useState<string | null>(null);
+  const [regSuccess, setRegSuccess] = useState<string | null>(null);
 
   if (authStatus === "loading") {
     return (
@@ -188,7 +201,7 @@ export default function AdminPage() {
           <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
             İdarəetmə
           </div>
-          {NAV.map((item) => {
+          {BASE_NAV.map((item) => {
             const isActive = activeSection === item.id;
             return (
               <button
@@ -207,6 +220,32 @@ export default function AdminPage() {
               </button>
             );
           })}
+          {isOwner && (
+            <>
+              <div className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-400">
+                Owner
+              </div>
+              {OWNER_NAV.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveSection(item.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-brand-500/10 text-brand-200 border border-brand-500/20"
+                        : "text-ink-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <item.Icon className="h-4 w-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         <div className="p-3 border-t border-white/5">
@@ -278,6 +317,25 @@ export default function AdminPage() {
 
           {activeSection === "oils" && (
             <OilCatalogPanel onUnauthorized={logout} />
+          )}
+
+          {activeSection === "register-service" && isOwner && (
+            <RegisterServicePanel
+              username={regUsername}
+              setUsername={setRegUsername}
+              password={regPassword}
+              setPassword={setRegPassword}
+              confirm={regConfirm}
+              setConfirm={setRegConfirm}
+              submitting={regSubmitting}
+              setSubmitting={setRegSubmitting}
+              error={regError}
+              setError={setRegError}
+              success={regSuccess}
+              setSuccess={setRegSuccess}
+              fieldClass={fieldClass}
+              labelClass={labelClass}
+            />
           )}
 
           {activeSection === "search" && (
@@ -653,5 +711,153 @@ export default function AdminPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+interface RegisterServicePanelProps {
+  username: string; setUsername: (v: string) => void;
+  password: string; setPassword: (v: string) => void;
+  confirm: string; setConfirm: (v: string) => void;
+  submitting: boolean; setSubmitting: (v: boolean) => void;
+  error: string | null; setError: (v: string | null) => void;
+  success: string | null; setSuccess: (v: string | null) => void;
+  fieldClass: string; labelClass: string;
+}
+
+function RegisterServicePanel({
+  username, setUsername,
+  password, setPassword,
+  confirm, setConfirm,
+  submitting, setSubmitting,
+  error, setError,
+  success, setSuccess,
+  fieldClass, labelClass
+}: RegisterServicePanelProps) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (password.length < 8) {
+      setError("Parol ən az 8 simvol olmalıdır.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Parol təkrarı uyğun gəlmir.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await carServiceAuth.register({ username: username.trim(), password });
+      setSuccess(`"${username.trim()}" adlı operator hesabı uğurla yaradıldı.`);
+      setUsername("");
+      setPassword("");
+      setConfirm("");
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Qeydiyyat tamamlanmadı. Yenidən cəhd edin."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border-hairline bg-linear-to-br from-ink-900/80 to-ink-900/40 p-6 sm:p-8 relative overflow-hidden max-w-lg">
+      <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand-500/10 blur-3xl" />
+      <div className="relative">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-700 shadow-glow shrink-0">
+            <ShieldCheck className="h-5 w-5 text-white" />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Yeni Servis Qeydiyyatı</h2>
+            <p className="text-xs text-ink-400 mt-0.5">Yeni operator hesabı yaradın</p>
+          </div>
+        </div>
+
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+          <label className="block">
+            <span className={labelClass}>İstifadəçi adı</span>
+            <input
+              type="text"
+              autoComplete="off"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="yeni-servis"
+              required
+              minLength={3}
+              spellCheck={false}
+              className={fieldClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClass}>Parol</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={8}
+              className={fieldClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClass}>Parol təkrarı</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={8}
+              className={fieldClass}
+            />
+          </label>
+
+          {error && (
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-3.5 text-sm text-brand-200"
+            >
+              <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div
+              role="status"
+              className="flex items-start gap-2.5 rounded-xl border border-green-500/30 bg-green-500/10 p-3.5 text-sm text-green-300"
+            >
+              <CheckCircle2 className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold text-white shadow-glow transition-all"
+          >
+            {submitting ? (
+              <>
+                <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                Yaradılır…
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                Operator hesabını yarat
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </section>
   );
 }

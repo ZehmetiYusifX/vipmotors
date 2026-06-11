@@ -108,7 +108,7 @@ export default function LoginPage() {
         </div>
 
         <Link
-          href="/admin"
+          href="/vugar244"
           className="inline-flex items-center justify-center gap-2 rounded-xl border-hairline bg-white/5 hover:bg-white/10 px-5 py-3 text-sm font-medium text-ink-200 hover:text-white transition-colors"
         >
           <ShieldAlert className="h-4 w-4 text-brand-400" />
