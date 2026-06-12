@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { ProductCard } from "@/components/shop/ProductCard";
-import { Select } from "@/components/shop/Select";
+import { Select } from "@/components/ui/Select";
 import { motorOilsApi, productsApi } from "@/lib/api/endpoints";
 import {
   buildCategories,

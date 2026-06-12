@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { CarFormModal } from "@/components/dashboard/CarFormModal";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { DashboardSection } from "@/components/dashboard/nav";
 import { CarsSection } from "@/components/dashboard/sections/CarsSection";
 import { HistorySection } from "@/components/dashboard/sections/HistorySection";
@@ -26,6 +27,8 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<UserCar | null>(null);
   const [carError, setCarError] = useState<string | null>(null);
+  const [deleteCarTarget, setDeleteCarTarget] = useState<UserCar | null>(null);
+  const [deletingCar, setDeletingCar] = useState(false);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -76,16 +79,24 @@ export default function DashboardPage() {
     setModalOpen(true);
   }
 
-  async function deleteCar(car: UserCar) {
+  function deleteCar(car: UserCar) {
     if (car.id === 0) return;
-    if (!confirm(`${car.carBrand} ${car.brandModel} (${car.plateNumber}) silinsin?`))
-      return;
+    setDeleteCarTarget(car);
+  }
+
+  async function confirmDeleteCar() {
+    if (!deleteCarTarget) return;
+    setDeletingCar(true);
     setCarError(null);
     try {
-      await userCarsApi.remove(car.id);
+      await userCarsApi.remove(deleteCarTarget.id);
+      setDeleteCarTarget(null);
       await refresh();
     } catch (err) {
+      setDeleteCarTarget(null);
       setCarError(err instanceof ApiError ? err.message : "Silmək mümkün olmadı.");
+    } finally {
+      setDeletingCar(false);
     }
   }
 
@@ -180,6 +191,21 @@ export default function DashboardPage() {
         editing={editingCar}
         onClose={() => setModalOpen(false)}
         onSaved={refresh}
+      />
+
+      <ConfirmDialog
+        open={!!deleteCarTarget}
+        danger
+        title="Avtomobili sil"
+        message={
+          deleteCarTarget
+            ? `${deleteCarTarget.carBrand} ${deleteCarTarget.brandModel} (${deleteCarTarget.plateNumber}) silinsin?`
+            : undefined
+        }
+        confirmLabel="Sil"
+        loading={deletingCar}
+        onConfirm={confirmDeleteCar}
+        onCancel={() => setDeleteCarTarget(null)}
       />
     </DashboardShell>
   );

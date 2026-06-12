@@ -22,7 +22,9 @@ import {
   X,
   Star,
   ArrowRight,
-  Navigation
+  Navigation,
+  Plus,
+  Headphones
 } from "lucide-react";
 
 function WhatsApp({ className }: { className?: string }) {
@@ -60,6 +62,8 @@ function Instagram({ className }: { className?: string }) {
 import { AuthNav } from "./landing/AuthNav";
 import { OilsPreview } from "./landing/OilsPreview";
 import ChatWidget from "@/components/ChatWidget";
+import { servicesApi } from "@/lib/api/endpoints";
+import type { ServiceItem } from "@/lib/api/types";
 import { useUserSession } from "@/lib/auth/useUserSession";
 import { cn } from "@/lib/cn";
 
@@ -115,6 +119,32 @@ const SERVICES: Service[] = [
   }
 ];
 
+// Maps backend `icon` keys (and a few synonyms) to lucide icons.
+const SERVICE_ICONS: Record<string, typeof Wrench> = {
+  oil: Droplet,
+  filter: Droplet,
+  karobka: Cog,
+  gearbox: Cog,
+  transmission: Cog,
+  diagnos: Gauge,
+  diagnostic: Gauge,
+  brakepedal: Disc3,
+  brake: Disc3,
+  engine: Wrench,
+  motor: Wrench,
+  aircon: Snowflake,
+  ac: Snowflake
+};
+
+function serviceFromApi(item: ServiceItem): Service {
+  return {
+    id: String(item.id).padStart(2, "0"),
+    title: item.title,
+    body: item.description,
+    Icon: SERVICE_ICONS[(item.icon ?? "").toLowerCase()] ?? Wrench
+  };
+}
+
 const REVIEWS: Review[] = [
   {
     name: "Kamran",
@@ -140,6 +170,29 @@ const REVIEWS: Review[] = [
     name: "Səbinə",
     quote: "Qiymət əvvəl deyilir, sonradan əlavə çıxmır. Bu, etibar yaradır.",
     rating: 5
+  }
+];
+
+const FAQS: { q: string; a: string }[] = [
+  {
+    q: "Servis üçün əvvəlcədən qeydiyyat lazımdırmı?",
+    a: "Tövsiyə olunur. Zəng və ya WhatsApp ilə vaxt təyin etsəniz, avtomobiliniz gözləmədən qəbul olunur."
+  },
+  {
+    q: "Hansı markalara xidmət göstərirsiniz?",
+    a: "Əsasən premium Alman avtomobillərinə — Mercedes-Benz, BMW, Audi, Porsche və Volkswagen. Bununla yanaşı digər Avropa, Yapon və Koreya markalarına da diaqnostikadan əsaslı təmirə qədər xidmət göstəririk."
+  },
+  {
+    q: "Orijinal ehtiyat hissələrdən istifadə edirsiniz?",
+    a: "Markaya uyğun orijinal və ya keyfiyyətə zəmanət verilən ekvivalent hissələrlə işləyirik."
+  },
+  {
+    q: "Gördüyünüz işə zəmanət varmı?",
+    a: "Bəli. Həm görülən işə, həm də quraşdırılan hissələrə zəmanət verilir."
+  },
+  {
+    q: "Komandanız təcrübəlidirmi?",
+    a: "Ustalarımız premium Alman avtomobilləri üzrə uzunillik təcrübəyə malik peşəkarlardır."
   }
 ];
 
@@ -174,6 +227,25 @@ export function ScrollStory() {
   const [activeSection, setActiveSection] = useState("overview");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [services, setServices] = useState<Service[]>(SERVICES);
+
+  // Load services from the API; keep the static list as a fallback so the
+  // section always renders (the endpoint requires auth for anonymous users).
+  useEffect(() => {
+    const controller = new AbortController();
+    servicesApi
+      .getAll(controller.signal)
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setServices(items.map(serviceFromApi));
+        }
+      })
+      .catch(() => {
+        /* keep fallback SERVICES */
+      });
+    return () => controller.abort();
+  }, []);
 
   const NAV_LINKS = useMemo(
     () => [
@@ -181,6 +253,7 @@ export function ScrollStory() {
       { id: "services", label: "Xidmətlər", path: "/services" },
       { id: "oils", label: "Kataloq", path: "/catalog" },
       { id: "reviews", label: "Rəylər", path: "/reviews" },
+      { id: "support", label: "Dəstək", path: "/support" },
       { id: "contact", label: "Əlaqə", path: "/contact" }
     ],
     []
@@ -549,7 +622,7 @@ export function ScrollStory() {
           </div>
 
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {SERVICES.map((s) => (
+            {services.map((s) => (
               <article
                 key={s.id}
                 className="group relative rounded-2xl border-hairline bg-ink-900/50 p-6 hover:bg-ink-900 hover:border-brand-500/30 transition-all duration-300 overflow-hidden"
@@ -614,7 +687,120 @@ export function ScrollStory() {
         </div>
       </section>
 
-      {/* Contact / CTA */}
+      {/* Support / FAQ */}
+      <section
+        className="relative py-24 sm:py-32 bg-ink-900/30 border-y border-white/5"
+        id="support"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
+              Tez-tez verilən <span className="text-gradient">suallar</span>.
+            </h2>
+            <p className="mt-5 text-lg text-ink-300">
+              Servis, qiymət və zəmanətlə bağlı ən çox soruşulanlar. Cavabını
+              tapmasanız, birbaşa bizə yazın.
+            </p>
+          </div>
+
+          <div className="mt-12 grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+            {/* FAQ accordion */}
+            <div className="lg:col-span-2 space-y-3">
+              {FAQS.map((faq, i) => {
+                const isOpen = openFaq === i;
+                return (
+                  <div
+                    key={faq.q}
+                    className={cn(
+                      "rounded-2xl border-hairline overflow-hidden transition-colors",
+                      isOpen ? "bg-white/[0.04]" : "bg-ink-900/40 hover:bg-ink-900/70"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      aria-expanded={isOpen}
+                      className="w-full flex items-center justify-between gap-4 px-5 py-4 sm:px-6 sm:py-5 text-left"
+                    >
+                      <span className="text-[15px] sm:text-base font-medium text-white">
+                        {faq.q}
+                      </span>
+                      <span
+                        className={cn(
+                          "grid h-7 w-7 shrink-0 place-items-center rounded-full border-hairline transition-colors",
+                          isOpen && "bg-brand-500/15 border-brand-500/30"
+                        )}
+                      >
+                        <Plus
+                          className={cn(
+                            "h-4 w-4 text-ink-300 transition-transform duration-300",
+                            isOpen && "rotate-45 text-brand-300"
+                          )}
+                        />
+                      </span>
+                    </button>
+                    <motion.div
+                      initial={false}
+                      animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+                      transition={{ duration: reducedMotion ? 0 : 0.28, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 sm:px-6 sm:pb-6 text-sm leading-relaxed text-ink-300">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Still need help card */}
+            <div className="rounded-2xl border-hairline bg-gradient-to-br from-ink-900 to-ink-900/40 p-6 sm:p-7 lg:sticky lg:top-28">
+              <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/10 text-brand-300">
+                <Headphones className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-white">
+                Cavabını tapmadın?
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-300">
+                Komandamız iş saatlarında operativ cavab verir — bir kanal seç.
+              </p>
+
+              <div className="mt-5 space-y-3">
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-3.5 rounded-xl glass p-3.5 hover:bg-white/[0.06] transition-colors"
+                >
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
+                    <WhatsApp className="h-4.5 w-4.5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-white">WhatsApp</span>
+                    <span className="block text-xs text-ink-400">Bir neçə dəqiqəyə cavab</span>
+                  </span>
+                </a>
+                <a
+                  href={`tel:${PHONE_TEL}`}
+                  className="flex items-center gap-3.5 rounded-xl glass p-3.5 hover:bg-white/[0.06] transition-colors"
+                >
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-500/10 text-brand-300 shrink-0">
+                    <Phone className="h-4.5 w-4.5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-white break-words">
+                      {PHONE_DISPLAY}
+                    </span>
+                    <span className="block text-xs text-ink-400">Hər gün 09:00 – 19:00</span>
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="relative py-24 sm:py-32" id="contact">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl border-hairline bg-gradient-to-br from-ink-900 via-ink-850 to-ink-900 p-8 sm:p-14">

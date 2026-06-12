@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  ShieldCheck,
   Wrench
 } from "lucide-react";
 
@@ -17,26 +16,16 @@ import { carServiceAuth } from "@/lib/api/endpoints";
 import { ApiError, type AuthResponse } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
 
-type Mode = "login" | "register";
-
 interface AdminAuthProps {
   onAuthenticated: (tokens: AuthResponse) => void;
 }
 
 export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
-  const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  function switchMode(next: Mode) {
-    setMode(next);
-    setError(null);
-    setConfirm("");
-  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -46,28 +35,16 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
       setError("Parol ən az 8 simvol olmalıdır.");
       return;
     }
-    if (mode === "register") {
-      if (password !== confirm) {
-        setError("Parol təkrarı uyğun gəlmir.");
-        return;
-      }
-    }
 
     setSubmitting(true);
     try {
-      const payload = { username: username.trim(), password };
-      const tokens =
-        mode === "login"
-          ? await carServiceAuth.login(payload)
-          : await carServiceAuth.register(payload);
+      const tokens = await carServiceAuth.login({ username: username.trim(), password });
       onAuthenticated(tokens);
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : mode === "login"
-            ? "Daxil olmaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin."
-            : "Qeydiyyat tamamlanmadı. Zəhmət olmasa yenidən cəhd edin."
+          : "Daxil olmaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin."
       );
     } finally {
       setSubmitting(false);
@@ -137,38 +114,13 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
 
         <div className="mx-auto w-full max-w-md">
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
-            {mode === "login"
-              ? "Operator kabinetinə daxil ol"
-              : "Yeni operator hesabı yarat"}
+            Operator kabinetinə daxil ol
           </h1>
           <p className="mt-3 text-ink-300 leading-relaxed">
-            {mode === "login"
-              ? "Müştəri axtarışı və servis qeydləri operatorlar üçün açıqdır."
-              : "Komandan üçün istənilən sayda operator hesabı aça bilərsən."}
+            Müştəri axtarışı və servis qeydləri operatorlar üçün açıqdır.
           </p>
 
-          {/* Tabs */}
-          <div className="mt-8 inline-flex rounded-xl bg-ink-900/60 border-hairline p-1">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="tab"
-                aria-selected={mode === m}
-                onClick={() => switchMode(m)}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-all",
-                  mode === m
-                    ? "bg-brand-500 text-white shadow-glow"
-                    : "text-ink-300 hover:text-white"
-                )}
-              >
-                {m === "login" ? "Daxil ol" : "Qeydiyyat"}
-              </button>
-            ))}
-          </div>
-
-          <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+          <form className="mt-8 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
             <label className="block">
               <span className={labelClass}>İstifadəçi adı</span>
               <input
@@ -189,7 +141,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -207,22 +159,6 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
                 </button>
               </div>
             </label>
-
-            {mode === "register" && (
-              <label className="block">
-                <span className={labelClass}>Parol təkrarı</span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  required
-                  minLength={8}
-                  placeholder="••••••••"
-                  className={fieldClass}
-                />
-              </label>
-            )}
 
             {error && (
               <div
@@ -243,22 +179,15 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
               {submitting ? (
                 <>
                   <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                  {mode === "login" ? "Daxil olunur…" : "Yaradılır…"}
+                  Daxil olunur…
                 </>
               ) : (
                 <>
-                  {mode === "login" ? "Daxil ol" : "Operator hesabını yarat"}
+                  Daxil ol
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
-
-            <div className="flex items-center justify-between pt-4 border-t border-white/5 text-sm">
-              <span className="text-ink-400">Sürücüsən?</span>
-              <Link href="/login" className="font-semibold text-brand-300 hover:text-brand-200">
-                Sürücü kabineti →
-              </Link>
-            </div>
           </form>
         </div>
       </section>

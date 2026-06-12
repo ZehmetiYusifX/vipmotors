@@ -14,6 +14,9 @@ import {
 
 import { motorOilsApi } from "@/lib/api/endpoints";
 import { ApiError, type MotorOil, type MotorOilPayload } from "@/lib/api/types";
+import { resolveImageUrl } from "@/lib/media";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast, type ToastState } from "@/components/ui/Toast";
 
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
@@ -62,6 +65,10 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
   const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [deleteTarget, setDeleteTarget] = useState<MotorOil | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+
   async function load() {
     setLoading(true);
     setError(null);
@@ -96,7 +103,7 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
     setEditing(o);
     setForm(toFormState(o));
     setImage(null);
-    setImagePreview(o.oilImage || null);
+    setImagePreview(resolveImageUrl(o.oilImage));
     setSaveError(null);
     setModalOpen(true);
   }
@@ -152,17 +159,25 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
     }
   }
 
-  async function handleDelete(o: MotorOil) {
-    if (!confirm(`"${o.productName}" silinsin?`)) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await motorOilsApi.remove(o.id);
+      await motorOilsApi.remove(deleteTarget.id);
+      setDeleteTarget(null);
       await load();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         onUnauthorized();
         return;
       }
-      alert(err instanceof ApiError ? err.message : "Silmək mümkün olmadı.");
+      setDeleteTarget(null);
+      setToast({
+        kind: "error",
+        text: err instanceof ApiError ? err.message : "Silmək mümkün olmadı."
+      });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -229,7 +244,11 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
               <div className="aspect-[4/3] bg-ink-950/70 grid place-items-center overflow-hidden">
                 {o.oilImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={o.oilImage} alt={o.productName} className="h-full w-full object-cover" />
+                  <img
+                    src={resolveImageUrl(o.oilImage) ?? ""}
+                    alt={o.productName}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <ImageIcon className="h-12 w-12 text-ink-500" />
                 )}
@@ -270,7 +289,7 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(o)}
+                    onClick={() => setDeleteTarget(o)}
                     className="grid h-8 w-8 place-items-center rounded-lg text-red-300 hover:bg-red-500/10"
                     aria-label="Sil"
                   >
@@ -313,8 +332,7 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={!!editing}
-                    className="relative grid h-24 w-24 place-items-center rounded-xl border-hairline bg-ink-900/60 overflow-hidden hover:border-brand-500/40 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    className="relative grid h-24 w-24 place-items-center rounded-xl border-hairline bg-ink-900/60 overflow-hidden hover:border-brand-500/40 transition-colors"
                   >
                     {imagePreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -332,7 +350,7 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
                   />
                   <div className="text-xs text-ink-400">
                     {editing
-                      ? "Şəkil yalnız yeni yağ əlavə edərkən yüklənir."
+                      ? "Yeni şəkil seçsəniz, mövcud şəkil əvəzlənəcək. Dəyişməsən, köhnə şəkil qalır."
                       : "Yağ qabının şəkli (opsional). Şəkilsiz də yarada bilərsiniz."}
                   </div>
                 </div>
@@ -436,6 +454,20 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        danger
+        title="Yağı sil"
+        message={
+          deleteTarget ? `"${deleteTarget.productName}" silinsin?` : undefined
+        }
+        confirmLabel="Sil"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </section>
   );
 }

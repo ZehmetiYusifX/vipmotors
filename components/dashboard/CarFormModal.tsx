@@ -167,60 +167,6 @@ export function CarFormModal({ open, editing, onClose, onSaved }: CarFormModalPr
               placeholder="WVWZZZ1JZXW000001"
             />
           </div>
-          <div>
-            <label className={labelClass}>İlk qeydiyyat km</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              className={fieldClass}
-              value={form.firstRegisteredKm ? String(form.firstRegisteredKm) : ""}
-              onChange={(e) =>
-                update("firstRegisteredKm", Number(e.target.value.replace(/\D/g, "")) || 0)
-              }
-              placeholder="60000"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Hazırkı km</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              className={fieldClass}
-              value={form.currentKm ? String(form.currentKm) : ""}
-              onChange={(e) =>
-                update("currentKm", Number(e.target.value.replace(/\D/g, "")) || 0)
-              }
-              placeholder="85000"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Yağ markası (ixtiyari)</label>
-            <input
-              className={fieldClass}
-              value={form.oilBrand ?? ""}
-              onChange={(e) => update("oilBrand", e.target.value || null)}
-              placeholder="Mobil 1"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Yağ tipi (ixtiyari)</label>
-            <input
-              className={fieldClass}
-              value={form.oilType ?? ""}
-              onChange={(e) => update("oilType", e.target.value || null)}
-              placeholder="5W-30"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Son servis tarixi (ixtiyari)</label>
-            <input
-              type="date"
-              className={cn(fieldClass, "[color-scheme:dark]")}
-              value={form.lastServiceDate ?? ""}
-              onChange={(e) => update("lastServiceDate", e.target.value || null)}
-            />
-          </div>
-
           {error && (
             <div className="sm:col-span-2 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-sm text-red-200">
               <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />

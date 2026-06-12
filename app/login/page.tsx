@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ShieldAlert } from "lucide-react";
 
 import { AuthShell } from "@/components/app/AuthShell";
 import { AuthAlert } from "@/components/app/auth/AuthAlert";
@@ -100,20 +99,6 @@ export default function LoginPage() {
         <AuthButton loading={submitting} loadingText="Daxil olunur…">
           Daxil ol
         </AuthButton>
-
-        <div className="flex items-center gap-3 pt-2">
-          <div className="flex-1 h-px bg-white/5" />
-          <span className="text-[11px] uppercase tracking-[0.18em] text-ink-500">və ya</span>
-          <div className="flex-1 h-px bg-white/5" />
-        </div>
-
-        <Link
-          href="/vugar244"
-          className="inline-flex items-center justify-center gap-2 rounded-xl border-hairline bg-white/5 hover:bg-white/10 px-5 py-3 text-sm font-medium text-ink-200 hover:text-white transition-colors"
-        >
-          <ShieldAlert className="h-4 w-4 text-brand-400" />
-          Servis operatoru girişi
-        </Link>
       </form>
     </AuthShell>
   );

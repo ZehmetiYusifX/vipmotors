@@ -1,4 +1,5 @@
 import type { MotorOil, Product } from "@/lib/api/types";
+import { resolveImageUrl } from "@/lib/media";
 
 const PHONE_TEL = "+994552440646";
 const WHATSAPP_BASE = `https://wa.me/${PHONE_TEL.replace(/\D/g, "")}`;
@@ -43,7 +44,7 @@ export function mapOil(o: MotorOil): CatalogItem {
     spec: o.standardApproval || o.specification || null,
     description: o.description || null,
     price: o.oilPrice,
-    image: o.oilImage,
+    image: resolveImageUrl(o.oilImage),
     inStock: true,
     count: null
   };

@@ -3,6 +3,7 @@ import { findBrand, pickSpec, FuelType, OilSpec } from "@/lib/oil/database";
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_MODEL = "gpt-5.1";
 
 const EXTRACT_PROMPT = `Sən avtomobil məlumatlarını çıxaran assistant-san. İstifadəçinin mesajından və/və ya texpasport şəklindən bu məlumatları çıxar və YALNIZ JSON qaytar:
 
@@ -22,14 +23,21 @@ Mühərrik həcmi tanıma (engineCc həmişə cc-də rəqəm olmalıdır):
 - "3.5", "3.5L" → 3500
 - Yalnız rəqəm yazılıbsa (məs. "2") və kontekst mühərrik həcmidirsə → rəqəm × 1000
 
+Premium Alman markalarında (BMW, Mercedes-Benz, Audi, Volkswagen, Porsche) model işarəsi mühərrik haqqında məlumat daşıyır. İstifadəçi mühərrik həcmini və ya yanacağı açıq yazmasa belə, model + il məlumdursa, öz bilikinə əsaslanaraq engineCc və fuel sahələrini DOLDUR:
+- VACİB: badge rəqəmini birbaşa həcm kimi qəbul ETMƏ — modelin real nəsli və ilinə uyğun faktiki həcmi yaz. Məsələn: BMW 528i (F10, 2011-2016) → engineCc 1997 (2.0 turbo, N20), 2.8 DEYİL; BMW 530i (E60, 2003-2007) → 2996; BMW 320i (F30) → 1997; Mercedes E220 (W212) → təxminən 2143.
+- Modeli dəqiq tanıyırsansa engineCc-ni təxmin et; yalnız model/il həqiqətən qeyri-müəyyəndirsə null saxla.
+- engineCode-u da bildiyin halda doldur: Mercedes E220 (W212, dizel) → "OM651"; Mercedes E200/E250 CGI → "M274/M271"; BMW 528i (F10) → "N20"; BMW 320d (F30) → "N47/B47"; Audi/VW 2.0 TFSI → "EA888", 2.0 TDI → "EA288". Kuza/şassi kodu (W212, F10, E60) modeli tanımağa kömək edir — istifadəçi onu yazsa, mütləq nəzərə al.
+
 Yanacaq növü tanıma:
 - "benzin", "petrol", "qazolin", "gasoline" → "petrol"
 - "dizel", "diesel", "tdi", "cdi", "hdi", "crdi", "dci" → "diesel"
 - "hibrid", "hybrid", "hev", "phev", "plug-in" → "hybrid"
 - "elektrik", "electric", "ev", "bev" → "ev"
 - Model adı dizeli birbaşa göstərirsə (məs. "E220d", "320d", "Tiguan TDI") → "diesel"
+- Alman premium markalarında badge yanacağı göstərir: BMW/Mercedes sonunda "d" (320d, E220d) → "diesel"; "i" (528i, 320i) → "petrol"; "e"/"iPerformanceeDrive" → "hybrid". Audi/VW: TFSI/TSI → "petrol", TDI → "diesel".
+- "528", "320", "E220" kimi yalnız rəqəmli yazılışda da, model + ilə görə tipik yanacağı (adətən "petrol") təyin et.
 - Tesla, hər hansı tam elektrik model → "ev"
-- Aydın deyilsə null qaytar, təxmin etmə.
+- Tanınan Alman modeli üçün yuxarıdakı qaydalarla təxmin et; yalnız naməlum marka/modeldə və aydın deyilsə null qaytar.
 
 Şəkil texpasport olduqda:
 - D sahəsi = marka
@@ -74,39 +82,47 @@ function parseJson(text: string): Extracted | null {
   }
 }
 
-function formatLiters(n: number): string {
-  if (n === 0) return "—";
-  return `${n.toFixed(1).replace(/\.0$/, "")} L `;
-}
+// Hibrid: GPT əsas mənbədir (modelə/mühərrikə görə dəqiq), lokal baza isə
+// yalnız yoxlama/dəstək referansı kimi prompt-a ötürülür.
+function buildRecommendPrompt(data: Extracted, dbRef: OilSpec | null): string {
+  const ref = dbRef
+    ? `Daxili baza referansı (YALNIZ yoxlama/dəstək üçün, marka+il üzrə ümumidir, konkret mühərrikə görə DEYİL): SAE ${dbRef.sae}, Standart ${dbRef.standard}, Tip ${dbRef.type}, Həcm ${dbRef.capacityLiters} L. Əgər bu konkret model/mühərrik üçün istehsalçının düzgün tələbi fərqlidirsə, ÖZ DÜZGÜN dəyərini ver — bazaya kor-koranə uyma.`
+    : `Daxili bazada bu marka yoxdur — tamamilə öz texniki bilikinə əsaslan.`;
 
-function buildReply(data: Extracted, spec: OilSpec, confidence: "high" | "medium" | "low", reason: string): string {
-  const brand = data.brand ?? "—";
-  const model = data.model ?? "—";
-  const year = data.year ?? "—";
-  const engine = data.engineCc ? `${data.engineCc} cc${data.engineCode ? ` · ${data.engineCode}` : ""}` : data.engineCode ?? "—";
-  const fuel = data.fuel ? FUEL_LABEL[data.fuel] : "—";
-  const conf = confidence === "high" ? "✅ Yüksək" : confidence === "medium" ? "⚠️ Orta" : "❌ Aşağı";
-  const isEv = spec.capacityLiters === 0;
+  return `Sən VIP Motors Baku Yağ Seçici Botusan. Aşağıdakı avtomobil üçün KONKRET model və mühərrikə uyğun, dəqiq mühərrik yağı tövsiyəsi ver. Öz texniki bilikin ƏSAS mənbədir.
 
-  return `Salam! VIP Motors Baku Yağ Seçici Bot nəticəsi:
+${ref}
+
+Avtomobil məlumatı:
+${JSON.stringify(data, null, 2)}
+
+CAVABI yalnız aşağıdakı formatda, Azərbaycan dilində MƏTN kimi qaytar:
+
+Salam! VIP Motors Baku Yağ Seçici Bot nəticəsi:
 
 🚗 Avtomobil:
-- Marka/Model: ${brand} ${model}
-- İl: ${year}
-- Mühərrik: ${engine}
-- Yanacaq: ${fuel}
+- Marka/Model: [marka model, məs. BMW 528i]
+- İl: [il]
+- Mühərrik: [həcm cc və/və ya kod, məs. 1997 cc · N20]
+- Yanacaq: [Benzin/Dizel/Hibrid/Elektrik]
 
 🛢 Tövsiyə olunan mühərrik yağı:
-- SAE: ${spec.sae}
-- Standart: ${spec.standard}
-- Tip: ${spec.type}
-- Həcm: ${formatLiters(spec.capacityLiters)}
-- Dəyişmə intervalı: ${isEv ? "—" : "5000-8000 km"}
+- SAE: [əsas özlülük, məs. 5W-30]
+- Standart: [istehsalçı təsdiqi, məs. BMW Longlife-01 (LL-01)]
+- Tip: Tam sintetik
+- Həcm: [filtirlə birlikdə litr, məs. 5 L]
+- Dəyişmə intervalı: [km aralığı, məs. 7000-10000 km]
 
 📊 Nəticənin etibarlılığı:
-${conf} — ${reason}
+[✅ Yüksək / ⚠️ Orta] — [qısa səbəb]
 
-📞 Avtoservis ilə əlaqə saxlayın: +994 55 244 06 46`;
+📞 Avtoservis ilə əlaqə saxlayın: +994 55 244 06 46
+
+QAYDALAR:
+- Yalnız yuxarıdakı mətni qaytar, başqa heç nə yazma.
+- Özlülüyü (SAE) məhz bu mühərrik üçün düzgün ver — bu ən vacib sahədir.
+- Həcmi həmişə litr ilə konkret yaz, tək rəqəm yazma.
+- Elektrik avtomobildə yağ tutumu və interval "—" yaz.`;
 }
 
 async function callOpenAI(messages: any[], maxTokens: number) {
@@ -117,8 +133,9 @@ async function callOpenAI(messages: any[], maxTokens: number) {
       Authorization: `Bearer ${OPENAI_KEY}`
     },
     body: JSON.stringify({
-      model: "gpt-4o",
-      max_tokens: maxTokens,
+      model: OPENAI_MODEL,
+      max_completion_tokens: maxTokens,
+      reasoning_effort: "low",
       messages
     })
   });
@@ -148,7 +165,7 @@ export async function POST(req: NextRequest) {
         { role: "system", content: EXTRACT_PROMPT },
         { role: "user", content: userContent }
       ],
-      400
+      1200
     );
 
     if (!extractRaw) {
@@ -162,10 +179,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // engineCc yağ seçiminə təsir etmir (pickSpec yalnız il + yanacaqdan asılıdır),
+    // ona görə onu məcburi tələb etmirik — GPT modeldən təxmin edir, yoxsa boş qalır.
     const missing: string[] = [];
     if (!extracted.model) missing.push("model");
     if (!extracted.year) missing.push("il");
-    if (!extracted.engineCc) missing.push("mühərrik həcmi (məs. 2.0 və ya 2000cc)");
     if (!extracted.fuel && extracted.fuel !== "ev") missing.push("yanacaq növü (benzin / dizel / hibrid / elektrik)");
 
     if (missing.length > 0) {
@@ -175,58 +193,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Lokal bazadan yalnız referans götürürük (yoxlama üçün); əsas tövsiyəni
+    // GPT modelə/mühərrikə görə dəqiq verir.
     const brandMatch = findBrand(extracted.brand);
+    const dbReference: OilSpec | null = brandMatch
+      ? pickSpec(brandMatch.entry, extracted.year, extracted.fuel).spec
+      : null;
 
-    if (brandMatch) {
-      const { spec, matched } = pickSpec(brandMatch.entry, extracted.year, extracted.fuel);
-      let confidence: "high" | "medium" | "low" = "medium";
-      let reason = "Marka tanındı, dəqiq mühərrik kodu olmadan ümumi tövsiyə.";
-      if (matched === "exact" && extracted.engineCc) {
-        confidence = "high";
-        reason = "Marka, il, yanacaq və mühərrik həcminə uyğun istehsalçı spesifikasiyası.";
-      } else if (matched === "exact") {
-        confidence = "high";
-        reason = "Marka, il və yanacaq növünə uyğun istehsalçı standartı.";
-      } else if (matched === "default") {
-        confidence = "medium";
-        reason = "Marka tanındı, il aralığı üçün xüsusi qayda yoxdur — markanın əsas standartı tətbiq edildi.";
-      }
-      const reply = buildReply(extracted, spec, confidence, reason);
-      return NextResponse.json({ reply });
-    }
-
-    const fallbackPrompt = `Sən VIP Motors Baku Yağ Seçici Botusan. Aşağıdakı avtomobil üçün yağ tövsiyəsi ver. Bizim bazada bu marka yoxdur, ona görə öz bilikindən istifadə et və CAVABI MƏTN KİMİ AZƏRBAYCAN DİLİNDƏ bu formatda qaytar:
-
-Salam! VIP Motors Baku Yağ Seçici Bot nəticəsi:
-
-🚗 Avtomobil:
-- Marka/Model: [marka model]
-- İl: [il]
-- Mühərrik: [həcm və/və ya kod]
-
-🛢 Tövsiyə olunan mühərrik yağı:
-- SAE: [SAE]
-- Standart: [API/ACEA standartı]
-- Tip: Tam sintetik
-- Həcm: [litr] L
-- Dəyişmə intervalı: 5000-8000 km
-
-📊 Nəticənin etibarlılığı:
-⚠️ Orta — Marka bazada yoxdur, ümumi mühərrik tipinə əsasən tövsiyə.
-
-📞 Avtoservis ilə əlaqə saxlayın: +994 55 244 06 46
-
-Avtomobil məlumatı:
-${JSON.stringify(extracted, null, 2)}
-
-QAYDA: Həcmi həmişə yaz. İntervalı həmişə "5000-8000 km" yaz. Tək rəqəm yazma.`;
-
-    const fallbackReply = await callOpenAI(
-      [{ role: "user", content: fallbackPrompt }],
-      500
+    const reply = await callOpenAI(
+      [{ role: "user", content: buildRecommendPrompt(extracted, dbReference) }],
+      1400
     );
 
-    return NextResponse.json({ reply: fallbackReply || "Cavab alına bilmədi." });
+    return NextResponse.json({ reply: reply || "Cavab alına bilmədi." });
   } catch (err: any) {
     console.error("Route error:", err);
     return NextResponse.json({ reply: `Xəta: ${err?.message ?? "naməlum"}. Yenidən cəhd edin.` }, { status: 500 });

@@ -11,12 +11,17 @@ import {
   ShoppingCart,
   AlertTriangle,
   Loader2,
-  Sparkles
+  Sparkles,
+  Clock,
+  CheckCircle2
 } from "lucide-react";
 
 import { productsApi } from "@/lib/api/endpoints";
 import { ApiError, type Product, type ProductPayload } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast, type ToastState } from "@/components/ui/Toast";
+import { PendingSalesPanel } from "./PendingSalesPanel";
 
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
@@ -24,13 +29,16 @@ const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2"
 
 const COMMON_CATEGORIES = [
   "ENGINE_OIL",
-  "BRAKE",
-  "FILTER",
+  "OIL_FILTER",
+  "AIR_FILTER",
+  "FUEL_FILTER",
+  "CABIN_FILTER",
+  "BRAKE_PAD",
+  "BRAKE_DISC",
+  "SPARK_PLUG",
   "BATTERY",
-  "SUSPENSION",
-  "ELECTRICAL",
-  "BODY",
-  "TRANSMISSION",
+  "TIRE",
+  "ACCESSORY",
   "OTHER"
 ];
 
@@ -63,7 +71,13 @@ function toFormState(p: Product | null): ProductPayload {
   };
 }
 
-export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
+export function InventoryPanel({
+  onUnauthorized,
+  isOwner = false
+}: {
+  onUnauthorized: () => void;
+  isOwner?: boolean;
+}) {
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,9 +96,16 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
   const [sellCount, setSellCount] = useState("1");
   const [sellLoading, setSellLoading] = useState(false);
   const [sellError, setSellError] = useState<string | null>(null);
+  const [sellNotice, setSellNotice] = useState<
+    { kind: "pending" | "done"; text: string } | null
+  >(null);
 
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupMsg, setLookupMsg] = useState<{ kind: "ok" | "warn" | "err"; text: string } | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   async function load() {
     setLoading(true);
@@ -224,17 +245,30 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
     }
   }
 
-  async function handleDelete(p: Product) {
-    if (!confirm(`"${p.product}" silinsin?`)) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await productsApi.remove(p.id);
+      await productsApi.remove(deleteTarget.id);
+      setDeleteTarget(null);
       await load();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         onUnauthorized();
         return;
       }
-      alert(err instanceof ApiError ? err.message : "Silmək mümkün olmadı.");
+      setDeleteTarget(null);
+      setToast({
+        kind: "error",
+        text:
+          err instanceof ApiError && err.status === 500
+            ? "Məhsulu silmək mümkün olmadı — ehtimal ki, onun satış tarixçəsi var."
+            : err instanceof ApiError
+              ? err.message
+              : "Silmək mümkün olmadı."
+      });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -242,6 +276,7 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
     setSellOpenFor(p);
     setSellCount("1");
     setSellError(null);
+    setSellNotice(null);
   }
 
   async function confirmSell(e: React.FormEvent) {
@@ -255,8 +290,19 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
     setSellLoading(true);
     setSellError(null);
     try {
-      await productsApi.sell({ partNumber: sellOpenFor.partNumber, count });
+      const sale = await productsApi.sell({
+        partNumber: sellOpenFor.partNumber,
+        count
+      });
       setSellOpenFor(null);
+      setSellNotice(
+        sale?.status === "PENDING"
+          ? {
+              kind: "pending",
+              text: "Satış qeydə alındı. Adminin təsdiqini gözləyin."
+            }
+          : { kind: "done", text: "Satış tamamlandı." }
+      );
       await load();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -310,6 +356,37 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
           </button>
         </div>
       </div>
+
+      {sellNotice && (
+        <div
+          role="status"
+          className={cn(
+            "flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm",
+            sellNotice.kind === "pending"
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+          )}
+        >
+          {sellNotice.kind === "pending" ? (
+            <Clock className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+          ) : (
+            <CheckCircle2 className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+          )}
+          <span className="flex-1">{sellNotice.text}</span>
+          <button
+            type="button"
+            onClick={() => setSellNotice(null)}
+            className="shrink-0 rounded-lg p-0.5 opacity-70 hover:opacity-100 hover:bg-white/5"
+            aria-label="Bağla"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {isOwner && (
+        <PendingSalesPanel onUnauthorized={onUnauthorized} onConfirmed={load} />
+      )}
 
       {error && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 flex items-center gap-2">
@@ -396,7 +473,7 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(p)}
+                          onClick={() => setDeleteTarget(p)}
                           className="grid h-8 w-8 place-items-center rounded-lg text-red-300 hover:bg-red-500/10"
                           aria-label="Sil"
                         >
@@ -678,6 +755,20 @@ export function InventoryPanel({ onUnauthorized }: { onUnauthorized: () => void 
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        danger
+        title="Məhsulu sil"
+        message={
+          deleteTarget ? `"${deleteTarget.product}" silinsin?` : undefined
+        }
+        confirmLabel="Sil"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </section>
   );
 }

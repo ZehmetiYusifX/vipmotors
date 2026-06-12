@@ -19,28 +19,36 @@ interface SelectProps {
   /** Leading icon element. */
   icon?: React.ReactNode;
   className?: string;
+  disabled?: boolean;
+  placeholder?: string;
 }
 
 /**
  * Fully custom dropdown — no native <select>, so the menu matches the dark
- * storefront theme on every browser. Closes on outside click / Escape and
- * supports arrow-key navigation.
+ * theme on every browser. Closes on outside click / Escape and supports
+ * arrow-key navigation.
  */
-export function Select({ value, options, onChange, label, icon, className }: SelectProps) {
+export function Select({
+  value,
+  options,
+  onChange,
+  label,
+  icon,
+  className,
+  disabled,
+  placeholder
+}: SelectProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
-  const selectedIndex = Math.max(
-    options.findIndex((o) => o.value === value),
-    0
-  );
-  const current = options[selectedIndex];
+  const selectedIndex = options.findIndex((o) => o.value === value);
+  const current = selectedIndex >= 0 ? options[selectedIndex] : undefined;
 
   useEffect(() => {
     if (!open) return;
-    setActiveIndex(selectedIndex);
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
 
     const onPointerDown = (e: PointerEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
@@ -78,11 +86,12 @@ export function Select({ value, options, onChange, label, icon, className }: Sel
     <div ref={rootRef} className={"relative " + (className ?? "")}>
       <button
         type="button"
+        disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-xl border-hairline bg-ink-900/60 px-3.5 py-2.5 text-left outline-none transition-colors hover:bg-ink-900 focus-visible:border-brand-500/50"
+        className="flex w-full items-center gap-2.5 rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-left outline-none transition-colors hover:bg-ink-900 focus-visible:border-brand-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {icon && <span className="shrink-0 text-ink-400">{icon}</span>}
         <span className="min-w-0 flex-1 leading-tight">
@@ -91,8 +100,13 @@ export function Select({ value, options, onChange, label, icon, className }: Sel
               {label}
             </span>
           )}
-          <span className="block truncate text-sm font-medium text-white">
-            {current?.label}
+          <span
+            className={
+              "block truncate text-sm font-medium " +
+              (current ? "text-white" : "text-ink-500")
+            }
+          >
+            {current?.label ?? placeholder ?? "Seçin"}
           </span>
         </span>
         <ChevronDown
@@ -103,11 +117,11 @@ export function Select({ value, options, onChange, label, icon, className }: Sel
         />
       </button>
 
-      {open && (
+      {open && !disabled && (
         <ul
           id={listId}
           role="listbox"
-          className="absolute right-0 z-50 mt-2 max-h-72 w-max min-w-full max-w-[20rem] origin-top overflow-auto rounded-xl border border-white/10 bg-ink-900/95 p-1.5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-dropdown [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="absolute left-0 right-0 z-50 mt-2 max-h-72 origin-top overflow-auto rounded-xl border border-white/10 bg-ink-900/95 p-1.5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-dropdown [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {options.map((opt, i) => {
             const selected = opt.value === value;

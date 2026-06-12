@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   Bell,
@@ -22,8 +22,14 @@ import {
 import { AdminAuth } from "@/components/app/AdminAuth";
 import { InventoryPanel } from "@/components/admin/InventoryPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
-import { carServiceAuth, carServiceOps } from "@/lib/api/endpoints";
-import { ApiError, type MaintenanceRecord, type UserProfile } from "@/lib/api/types";
+import { Select } from "@/components/ui/Select";
+import { carServiceAuth, carServiceOps, servicesApi } from "@/lib/api/endpoints";
+import {
+  ApiError,
+  type MaintenanceRecord,
+  type ServiceItem,
+  type UserProfile
+} from "@/lib/api/types";
 import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
 import { cn } from "@/lib/cn";
 import { normalizePlate } from "@/lib/plate";
@@ -40,6 +46,7 @@ type SearchState =
 function formatKm(value: number) {
   return new Intl.NumberFormat("az-AZ").format(value) + " km";
 }
+
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -90,6 +97,32 @@ export default function AdminPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [lastCreated, setLastCreated] = useState<MaintenanceRecord | null>(null);
 
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [workDescription, setWorkDescription] = useState("");
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    const controller = new AbortController();
+    servicesApi
+      .getAll(controller.signal, "CAR_SERVICE")
+      .then((items) => {
+        const list = Array.isArray(items) ? items : [];
+        setServices(list);
+        // Default to an oil-change service if one exists, otherwise the first.
+        const oil = list.find((s) => s.type === "OIL_CHANGE");
+        setSelectedServiceId((prev) => prev ?? (oil ?? list[0])?.id ?? null);
+      })
+      .catch(() => {
+        /* services optional; ignore */
+      });
+    return () => controller.abort();
+  }, [authStatus]);
+
+  const selectedService =
+    services.find((s) => s.id === selectedServiceId) ?? null;
+  const isOilChange = selectedService?.type === "OIL_CHANGE";
+
   const [regUsername, setRegUsername] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
@@ -139,13 +172,19 @@ export default function AdminPage() {
   async function createMaintenance(event: React.FormEvent) {
     event.preventDefault();
     if (search.status !== "found") return;
+    if (selectedServiceId == null) {
+      setCreateError("Zəhmət olmasa xidmət seçin.");
+      return;
+    }
     setCreateError(null);
     setCreating(true);
     try {
       const record = await carServiceOps.createMaintenance({
         plateNumber: search.customer.plateNumber,
-        oilBrand: oilBrand.trim(),
-        oilType: oilType.trim(),
+        serviceItemId: selectedServiceId,
+        workDescription: workDescription.trim(),
+        oilBrand: isOilChange ? oilBrand.trim() : "",
+        oilType: isOilChange ? oilType.trim() : "",
         serviceKm: Number(serviceKm),
         serviceDate
       });
@@ -312,7 +351,7 @@ export default function AdminPage() {
 
         <div className="flex-1 px-4 sm:px-8 py-8 space-y-6">
           {activeSection === "inventory" && (
-            <InventoryPanel onUnauthorized={logout} />
+            <InventoryPanel onUnauthorized={logout} isOwner={isOwner} />
           )}
 
           {activeSection === "oils" && (
@@ -542,10 +581,16 @@ export default function AdminPage() {
                   <dl className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-x-5 gap-y-4">
                     {[
                       { dt: "DQN", dd: lastCreated.customerPlateNumber, mono: true },
-                      {
-                        dt: "Yağ",
-                        dd: `${lastCreated.oilBrand} · ${lastCreated.oilType}`
-                      },
+                      { dt: "Xidmət", dd: lastCreated.serviceItemTitle || "—" },
+                      ...(lastCreated.serviceItemType === "OIL_CHANGE" &&
+                      (lastCreated.oilBrand || lastCreated.oilType)
+                        ? [
+                            {
+                              dt: "Yağ",
+                              dd: `${lastCreated.oilBrand} · ${lastCreated.oilType}`
+                            }
+                          ]
+                        : []),
                       { dt: "Km", dd: formatKm(lastCreated.serviceKm) },
                       { dt: "Tarix", dd: formatDate(lastCreated.serviceDate) }
                     ].map((row) => (
@@ -597,6 +642,27 @@ export default function AdminPage() {
                       />
                     </label>
 
+                    <label className="block">
+                      <span className={labelClass}>
+                        <Wrench className="inline h-3 w-3 mr-1 text-brand-400" />
+                        Xidmət
+                      </span>
+                      <Select
+                        value={
+                          selectedServiceId != null ? String(selectedServiceId) : ""
+                        }
+                        onChange={(v) => setSelectedServiceId(Number(v) || null)}
+                        options={services.map((s) => ({
+                          value: String(s.id),
+                          label: s.title
+                        }))}
+                        placeholder={
+                          services.length === 0 ? "Yüklənir…" : "Xidmət seçin"
+                        }
+                      />
+                    </label>
+
+                    {isOilChange && (
                     <div className="grid grid-cols-2 gap-3">
                       <label className="block">
                         <span className={labelClass}>
@@ -636,6 +702,19 @@ export default function AdminPage() {
                         </datalist>
                       </label>
                     </div>
+                    )}
+
+                    <label className="block">
+                      <span className={labelClass}>İş təsviri (opsional)</span>
+                      <textarea
+                        rows={2}
+                        value={workDescription}
+                        onChange={(e) => setWorkDescription(e.target.value)}
+                        placeholder="Görülən işin qısa təsviri"
+                        maxLength={1000}
+                        className={fieldClass}
+                      />
+                    </label>
 
                     <div className="grid grid-cols-2 gap-3">
                       <label className="block">

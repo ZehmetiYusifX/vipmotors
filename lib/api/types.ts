@@ -45,6 +45,10 @@ export interface MaintenanceRecord {
   customerPlateNumber: string;
   carServiceId: number;
   carServiceUsername: string;
+  serviceItemId?: number;
+  serviceItemTitle?: string;
+  serviceItemType?: ServiceType;
+  workDescription?: string;
   oilBrand: string;
   oilType: string;
   serviceKm: number;
@@ -92,6 +96,8 @@ export interface CarServiceCredentials {
 
 export interface CreateMaintenancePayload {
   plateNumber: string;
+  serviceItemId: number;
+  workDescription?: string;
   oilBrand: string;
   oilType: string;
   serviceKm: number;
@@ -128,6 +134,31 @@ export interface ProductPayload {
 export interface SellPayload {
   partNumber: string;
   count: number;
+}
+
+export type ServiceType = "OIL_CHANGE" | "GENERAL";
+
+export interface ServiceItem {
+  id: number;
+  type: ServiceType;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export type SaleStatus = "PENDING" | "CONFIRMED";
+
+export interface ProductSale {
+  id: number;
+  status: SaleStatus;
+  partNumber: string;
+  count: number;
+  productCount: number;
+  requestedBy: string | null;
+  confirmedBy: string | null;
+  createdAt: string | null;
+  confirmedAt: string | null;
+  product: Product | null;
 }
 
 export interface MotorOil {

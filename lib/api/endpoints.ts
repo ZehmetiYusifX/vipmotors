@@ -12,9 +12,12 @@ import type {
   MotorOilSearchQuery,
   Product,
   ProductPayload,
+  ProductSale,
   RegisterUserPayload,
   ResetPasswordPayload,
+  Role,
   SellPayload,
+  ServiceItem,
   UserCar,
   UserProfile
 } from "./types";
@@ -164,10 +167,22 @@ export const productsApi = {
     });
   },
   sell(payload: SellPayload) {
-    return apiRequest<Product>("/api/v1/products/sell", {
+    return apiRequest<ProductSale>("/api/v1/products/sell", {
       method: "POST",
       role: "CAR_SERVICE",
       body: payload
+    });
+  },
+  pendingSales(signal?: AbortSignal) {
+    return apiRequest<ProductSale[]>("/api/v1/products/sales/pending", {
+      role: "CAR_SERVICE",
+      signal
+    });
+  },
+  confirmSale(saleId: number) {
+    return apiRequest<ProductSale>(`/api/v1/products/sales/${saleId}/confirm`, {
+      method: "POST",
+      role: "CAR_SERVICE"
     });
   }
 };
@@ -241,6 +256,15 @@ export const motorOilsApi = {
     };
     return apiRequest<MotorOil[]>("/api/v1/motor-oils/search", {
       query: q,
+      signal
+    });
+  }
+};
+
+export const servicesApi = {
+  getAll(signal?: AbortSignal, role: Role = "USER") {
+    return apiRequest<ServiceItem[]>("/api/v1/services", {
+      role,
       signal
     });
   }
