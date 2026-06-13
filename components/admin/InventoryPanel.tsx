@@ -71,6 +71,23 @@ function toFormState(p: Product | null): ProductPayload {
   };
 }
 
+function StockBadge({ count }: { count: number }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
+        count > 5
+          ? "bg-emerald-500/15 text-emerald-300"
+          : count > 0
+            ? "bg-amber-500/15 text-amber-300"
+            : "bg-red-500/15 text-red-300"
+      )}
+    >
+      {count}
+    </span>
+  );
+}
+
 export function InventoryPanel({
   onUnauthorized,
   isOwner = false
@@ -326,6 +343,37 @@ export function InventoryPanel({
       })
     : items;
 
+  const rowActions = (p: Product) => (
+    <>
+      <button
+        type="button"
+        onClick={() => openSell(p)}
+        disabled={p.count === 0}
+        className="grid h-9 w-9 place-items-center rounded-lg text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label="Sat"
+        title="Sat"
+      >
+        <ShoppingCart className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => openEdit(p)}
+        className="grid h-9 w-9 place-items-center rounded-lg text-ink-300 hover:bg-white/5 hover:text-white"
+        aria-label="Redaktə"
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => setDeleteTarget(p)}
+        className="grid h-9 w-9 place-items-center rounded-lg text-red-300 hover:bg-red-500/10"
+        aria-label="Sil"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </>
+  );
+
   return (
     <section className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
@@ -336,8 +384,8 @@ export function InventoryPanel({
           </h2>
           <p className="mt-1 text-sm text-ink-400">Ehtiyat hissələri və məhsulların idarəsi</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
             <input
               type="text"
@@ -350,7 +398,7 @@ export function InventoryPanel({
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors shrink-0"
           >
             <Plus className="h-4 w-4" /> Yeni
           </button>
@@ -404,88 +452,99 @@ export function InventoryPanel({
             {items.length === 0 ? "Anbar boşdur. \"Yeni\" düyməsi ilə məhsul əlavə edin." : "Axtarış üçün nəticə yoxdur."}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-white/5 text-left text-[11px] uppercase tracking-[0.14em] text-ink-400">
-                <tr>
-                  <th className="px-4 py-3">Məhsul</th>
-                  <th className="px-4 py-3">Part №</th>
-                  <th className="px-4 py-3">Marka</th>
-                  <th className="px-4 py-3">Kateqoriya</th>
-                  <th className="px-4 py-3 text-right">Qiymət</th>
-                  <th className="px-4 py-3 text-right">Rəf</th>
-                  <th className="px-4 py-3 text-right">Stok</th>
-                  <th className="px-4 py-3 text-right">Əməliyyat</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3 text-white font-medium">{p.product}</td>
-                    <td className="px-4 py-3 font-mono text-ink-200">{p.partNumber}</td>
-                    <td className="px-4 py-3 text-ink-300">{p.brand}</td>
-                    <td className="px-4 py-3">
-                      {p.category ? (
-                        <span className="inline-flex items-center rounded-full bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 text-[10px] font-mono font-semibold text-brand-300">
-                          {p.category}
-                        </span>
-                      ) : (
-                        <span className="text-ink-500">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-white">{p.price.toFixed(2)} ₼</td>
-                    <td className="px-4 py-3 text-right text-ink-300">
-                      {p.shelf ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                          p.count > 5
-                            ? "bg-emerald-500/15 text-emerald-300"
-                            : p.count > 0
-                              ? "bg-amber-500/15 text-amber-300"
-                              : "bg-red-500/15 text-red-300"
-                        )}
-                      >
-                        {p.count}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openSell(p)}
-                          disabled={p.count === 0}
-                          className="grid h-8 w-8 place-items-center rounded-lg text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-30 disabled:cursor-not-allowed"
-                          aria-label="Sat"
-                          title="Sat"
-                        >
-                          <ShoppingCart className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(p)}
-                          className="grid h-8 w-8 place-items-center rounded-lg text-ink-300 hover:bg-white/5 hover:text-white"
-                          aria-label="Redaktə"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(p)}
-                          className="grid h-8 w-8 place-items-center rounded-lg text-red-300 hover:bg-red-500/10"
-                          aria-label="Sil"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            {/* Desktop / tablet: table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-white/5 text-left text-[11px] uppercase tracking-[0.14em] text-ink-400">
+                  <tr>
+                    <th className="px-4 py-3">Məhsul</th>
+                    <th className="px-4 py-3">Part №</th>
+                    <th className="px-4 py-3">Marka</th>
+                    <th className="px-4 py-3">Kateqoriya</th>
+                    <th className="px-4 py-3 text-right">Qiymət</th>
+                    <th className="px-4 py-3 text-right">Rəf</th>
+                    <th className="px-4 py-3 text-right">Stok</th>
+                    <th className="px-4 py-3 text-right">Əməliyyat</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filtered.map((p) => (
+                    <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3 text-white font-medium">{p.product}</td>
+                      <td className="px-4 py-3 font-mono text-ink-200">{p.partNumber}</td>
+                      <td className="px-4 py-3 text-ink-300">{p.brand}</td>
+                      <td className="px-4 py-3">
+                        {p.category ? (
+                          <span className="inline-flex items-center rounded-full bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 text-[10px] font-mono font-semibold text-brand-300">
+                            {p.category}
+                          </span>
+                        ) : (
+                          <span className="text-ink-500">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-white">{p.price.toFixed(2)} ₼</td>
+                      <td className="px-4 py-3 text-right text-ink-300">
+                        {p.shelf ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <StockBadge count={p.count} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {rowActions(p)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile: cards */}
+            <ul className="md:hidden divide-y divide-white/5">
+              {filtered.map((p) => (
+                <li key={p.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-white font-medium text-sm leading-snug">
+                        {p.product}
+                      </div>
+                      <div className="mt-1 font-mono text-xs text-ink-300">
+                        {p.partNumber}
+                      </div>
+                    </div>
+                    <StockBadge count={p.count} />
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-ink-300">{p.brand}</span>
+                    {p.category && (
+                      <span className="inline-flex items-center rounded-full bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 text-[10px] font-mono font-semibold text-brand-300">
+                        {p.category}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 pt-3 border-t border-white/5">
+                    <div className="flex items-center gap-4 text-xs">
+                      <span>
+                        <span className="text-ink-500">Qiymət </span>
+                        <span className="text-white font-medium">{p.price.toFixed(2)} ₼</span>
+                      </span>
+                      <span>
+                        <span className="text-ink-500">Rəf </span>
+                        <span className="text-ink-200">{p.shelf ?? "—"}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 -mr-1">
+                      {rowActions(p)}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

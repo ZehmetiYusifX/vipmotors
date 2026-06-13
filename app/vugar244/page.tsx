@@ -76,6 +76,15 @@ const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = 
   "register-service": { eyebrow: "Owner idarəsi", title: "Yeni Servis Qeydiyyatı" }
 };
 
+// Short labels for the mobile bottom tab bar (the full nav labels are too long
+// for tiny tab targets).
+const NAV_SHORT: Record<AdminSection, string> = {
+  search: "Axtarış",
+  inventory: "Anbar",
+  oils: "Kataloq",
+  "register-service": "Servis"
+};
+
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
 const labelClass = "block text-xs uppercase tracking-[0.14em] text-ink-400 mb-2";
@@ -216,6 +225,8 @@ export default function AdminPage() {
         .toUpperCase()
     : "";
 
+  const mobileNav = isOwner ? [...BASE_NAV, ...OWNER_NAV] : BASE_NAV;
+
   return (
     <main className="min-h-screen bg-ink-950 text-ink-100 lg:grid lg:grid-cols-[260px_1fr]">
       {/* Sidebar */}
@@ -349,7 +360,7 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <div className="flex-1 px-4 sm:px-8 py-8 space-y-6">
+        <div className="flex-1 px-4 sm:px-8 py-8 pb-28 lg:pb-8 space-y-6">
           {activeSection === "inventory" && (
             <InventoryPanel onUnauthorized={logout} isOwner={isOwner} />
           )}
@@ -789,6 +800,42 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile bottom tab bar — the sidebar nav is desktop-only, so this is the
+          only way to switch sections on phones. */}
+      <nav className="lg:hidden fixed inset-x-0 bottom-0 z-40 glass-strong border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+        <div
+          className="grid"
+          style={{ gridTemplateColumns: `repeat(${mobileNav.length}, minmax(0, 1fr))` }}
+        >
+          {mobileNav.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveSection(item.id)}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "relative flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium tracking-tight transition-colors",
+                  isActive ? "text-brand-300" : "text-ink-400 active:text-ink-100"
+                )}
+              >
+                {isActive && (
+                  <span className="absolute top-0 h-0.5 w-9 rounded-full bg-brand-500 shadow-glow" />
+                )}
+                <item.Icon
+                  className={cn(
+                    "h-5 w-5 transition-transform",
+                    isActive && "drop-shadow-[0_0_8px_rgba(239,42,58,0.55)]"
+                  )}
+                />
+                <span className="leading-none">{NAV_SHORT[item.id]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </main>
   );
 }

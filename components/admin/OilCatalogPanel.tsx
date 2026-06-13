@@ -202,18 +202,18 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
           </h2>
           <p className="mt-1 text-sm text-ink-400">Motor yağlarının spesifikasiyası və qiymətləri</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ad / viskozite / tip"
-            className="rounded-xl border-hairline bg-ink-900/60 px-3 py-2.5 text-sm text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 w-full sm:w-72"
+            className="rounded-xl border-hairline bg-ink-900/60 px-3 py-2.5 text-sm text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 flex-1 sm:flex-none sm:w-72"
           />
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors shrink-0"
           >
             <Plus className="h-4 w-4" /> Yeni
           </button>
