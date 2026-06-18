@@ -636,7 +636,7 @@ export function InventoryPanel({
                   className={fieldClass}
                   value={form.brand}
                   onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
-                  placeholder="Toyota"
+                  placeholder="BMW"
                 />
               </div>
               <div>
@@ -701,7 +701,7 @@ export function InventoryPanel({
                   className={fieldClass}
                   value={modelInput}
                   onChange={(e) => setModelInput(e.target.value)}
-                  placeholder="Corolla, Camry"
+                  placeholder="320i, 520d"
                 />
               </div>
               <div className="sm:col-span-2">

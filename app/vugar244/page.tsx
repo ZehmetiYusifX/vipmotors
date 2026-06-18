@@ -4,24 +4,31 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
-  Bell,
   Calendar,
   Car,
   CheckCircle2,
   Droplet,
+  Filter,
   Gauge,
+  History,
+  Loader2,
   LogOut,
   Package,
+  Pencil,
   Phone,
   Plus,
   Search,
   ShieldCheck,
+  Trash2,
+  UserPlus,
   Wrench
 } from "lucide-react";
 
 import { AdminAuth } from "@/components/app/AdminAuth";
+import { CustomerFormModal } from "@/components/admin/CustomerFormModal";
 import { InventoryPanel } from "@/components/admin/InventoryPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Select } from "@/components/ui/Select";
 import { carServiceAuth, carServiceOps, servicesApi } from "@/lib/api/endpoints";
 import {
@@ -32,6 +39,7 @@ import {
 } from "@/lib/api/types";
 import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
 import { cn } from "@/lib/cn";
+import { formatAzDate } from "@/lib/date";
 import { normalizePlate } from "@/lib/plate";
 
 type AdminSection = "search" | "inventory" | "oils" | "register-service";
@@ -48,16 +56,7 @@ function formatKm(value: number) {
 }
 
 
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat("az-AZ", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric"
-  }).format(date);
-}
+const formatDate = formatAzDate;
 
 const BASE_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
   { id: "search", label: "Müştəri axtarışı", Icon: Search },
@@ -99,12 +98,30 @@ export default function AdminPage() {
   const [oilBrand, setOilBrand] = useState("");
   const [oilType, setOilType] = useState("");
   const [serviceKm, setServiceKm] = useState("");
+  const [nextServiceKm, setNextServiceKm] = useState("");
+  const [oilFilterChanged, setOilFilterChanged] = useState(false);
+  const [fuelFilterChanged, setFuelFilterChanged] = useState(false);
+  const [airFilterChanged, setAirFilterChanged] = useState(false);
+  const [cabinFilterChanged, setCabinFilterChanged] = useState(false);
   const [serviceDate, setServiceDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [lastCreated, setLastCreated] = useState<MaintenanceRecord | null>(null);
+
+  const [history, setHistory] = useState<MaintenanceRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [customerModalEditing, setCustomerModalEditing] =
+    useState<UserProfile | null>(null);
+  const [deleteCustomerTarget, setDeleteCustomerTarget] =
+    useState<UserProfile | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState(false);
+  const [customerActionError, setCustomerActionError] = useState<string | null>(
+    null
+  );
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
@@ -158,12 +175,21 @@ export default function AdminPage() {
     setSearch({ status: "loading", plate: trimmed });
     setLastCreated(null);
     setCreateError(null);
+    setHistory([]);
     try {
       const customer = await carServiceOps.findCustomerByPlate(trimmed);
       setSearch({ status: "found", customer });
       setOilBrand(customer.oilBrand || "");
       setOilType(customer.oilType || "");
       setServiceKm(String(customer.currentKm || ""));
+      setNextServiceKm(
+        customer.nextServiceKm != null ? String(customer.nextServiceKm) : ""
+      );
+      setOilFilterChanged(false);
+      setFuelFilterChanged(false);
+      setAirFilterChanged(false);
+      setCabinFilterChanged(false);
+      void loadHistory(customer);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         setSearch({ status: "not_found", plate: trimmed });
@@ -195,9 +221,15 @@ export default function AdminPage() {
         oilBrand: isOilChange ? oilBrand.trim() : "",
         oilType: isOilChange ? oilType.trim() : "",
         serviceKm: Number(serviceKm),
+        nextServiceKm: nextServiceKm ? Number(nextServiceKm) : undefined,
+        oilFilterChanged,
+        fuelFilterChanged,
+        airFilterChanged,
+        cabinFilterChanged,
         serviceDate
       });
       setLastCreated(record);
+      void loadHistory(search.customer);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         logout();
@@ -208,6 +240,74 @@ export default function AdminPage() {
       );
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function loadHistory(forCustomer: UserProfile) {
+    setHistoryLoading(true);
+    try {
+      const records = await carServiceOps.maintenanceHistory({
+        plateNumber: forCustomer.plateNumber
+      });
+      setHistory(Array.isArray(records) ? records : []);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      // History is supplementary — never block the panel if it fails.
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function openCreateCustomer() {
+    setCustomerActionError(null);
+    setCustomerModalEditing(null);
+    setCustomerModalOpen(true);
+  }
+
+  function openEditCustomer(target: UserProfile) {
+    setCustomerActionError(null);
+    setCustomerModalEditing(target);
+    setCustomerModalOpen(true);
+  }
+
+  async function handleCustomerSaved(saved: UserProfile) {
+    // Reflect the saved customer in the search view and refresh its history.
+    setSearch({ status: "found", customer: saved });
+    setPlate(saved.plateNumber);
+    setOilBrand(saved.oilBrand || "");
+    setOilType(saved.oilType || "");
+    setServiceKm(String(saved.currentKm || ""));
+    setNextServiceKm(saved.nextServiceKm != null ? String(saved.nextServiceKm) : "");
+    setLastCreated(null);
+    await loadHistory(saved);
+  }
+
+  async function confirmDeleteCustomer() {
+    if (!deleteCustomerTarget) return;
+    setDeletingCustomer(true);
+    setCustomerActionError(null);
+    try {
+      await carServiceOps.deleteCustomer(deleteCustomerTarget.id);
+      setDeleteCustomerTarget(null);
+      setSearch({ status: "idle" });
+      setHistory([]);
+      setLastCreated(null);
+      setPlate("");
+    } catch (err) {
+      setDeleteCustomerTarget(null);
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setCustomerActionError(
+        err instanceof ApiError ? err.message : "Müştərini silmək mümkün olmadı."
+      );
+    } finally {
+      setDeletingCustomer(false);
     }
   }
 
@@ -332,13 +432,6 @@ export default function AdminPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="grid h-10 w-10 place-items-center rounded-lg border-hairline bg-white/5 hover:bg-white/10 text-ink-300 hover:text-white"
-                aria-label="Bildirişlər"
-              >
-                <Bell className="h-4 w-4" />
-              </button>
               <div className="flex items-center gap-2.5 rounded-full border-hairline bg-white/5 pl-1.5 pr-3 py-1.5">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-linear-to-br from-brand-500 to-brand-700 text-[11px] font-semibold text-white">
                   VM
@@ -415,7 +508,14 @@ export default function AdminPage() {
                     </span>
                     <h3 className="text-lg font-semibold mt-0.5">Müştəri tap</h3>
                   </div>
-                  <Search className="h-5 w-5 text-ink-400" />
+                  <button
+                    type="button"
+                    onClick={openCreateCustomer}
+                    className="inline-flex items-center gap-2 rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-200 hover:bg-brand-500/20 transition-colors"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Yeni müştəri</span>
+                  </button>
                 </div>
 
                 <form onSubmit={runSearch} className="flex flex-col sm:flex-row gap-3">
@@ -508,10 +608,28 @@ export default function AdminPage() {
                             {customer.phoneNumber}
                           </a>
                         </div>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Tapıldı
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Tapıldı
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => openEditCustomer(customer)}
+                            aria-label="Müştərini redaktə et"
+                            className="grid h-9 w-9 place-items-center rounded-lg border-hairline bg-white/5 text-ink-300 hover:text-white hover:bg-white/10 transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteCustomerTarget(customer)}
+                            aria-label="Müştərini sil"
+                            className="grid h-9 w-9 place-items-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="p-5 space-y-4">
@@ -576,6 +694,16 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {customerActionError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200"
+                >
+                  <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+                  <span>{customerActionError}</span>
+                </div>
+              )}
+
               {lastCreated && (
                 <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
                   <div className="flex items-center gap-3">
@@ -620,6 +748,116 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </dl>
+                </div>
+              )}
+
+              {customer && (
+                <div className="rounded-2xl border-hairline bg-ink-900/40 p-6">
+                  <div className="flex items-center justify-between gap-4 mb-5">
+                    <div className="flex items-center gap-2.5">
+                      <History className="h-5 w-5 text-brand-400" />
+                      <div>
+                        <span className="text-[11px] uppercase tracking-[0.18em] text-ink-400">
+                          Servis tarixçəsi
+                        </span>
+                        <h3 className="text-lg font-semibold mt-0.5">
+                          Keçmiş servislər
+                        </h3>
+                      </div>
+                    </div>
+                    {historyLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-ink-400" />
+                    ) : (
+                      <span className="rounded-full bg-white/5 border-hairline px-2.5 py-1 text-xs font-medium text-ink-300">
+                        {history.length}
+                      </span>
+                    )}
+                  </div>
+
+                  {!historyLoading && history.length === 0 ? (
+                    <div className="rounded-xl border-hairline border-dashed bg-ink-900/40 p-6 text-center text-sm text-ink-400">
+                      Bu müştəri üçün hələ servis qeydi yoxdur.
+                    </div>
+                  ) : (
+                    <ol className="space-y-3">
+                      {history.map((rec) => {
+                        const filters = [
+                          rec.oilFilterChanged && "Yağ filtri",
+                          rec.fuelFilterChanged && "Yanacaq filtri",
+                          rec.airFilterChanged && "Hava filtri",
+                          rec.cabinFilterChanged && "Salon filtri"
+                        ].filter(Boolean) as string[];
+                        return (
+                          <li
+                            key={rec.id}
+                            className="rounded-xl border-hairline bg-ink-900/60 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <strong className="text-sm text-white">
+                                {rec.serviceItemTitle || "Servis"}
+                              </strong>
+                              <span className="inline-flex items-center gap-1 text-xs text-ink-400 shrink-0">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(rec.serviceDate)}
+                              </span>
+                            </div>
+
+                            {rec.workDescription && (
+                              <p className="mt-1.5 text-xs text-ink-300">
+                                {rec.workDescription}
+                              </p>
+                            )}
+
+                            <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
+                              <div className="inline-flex items-center gap-1.5">
+                                <Gauge className="h-3 w-3 text-ink-500" />
+                                <dt className="text-ink-500">Km:</dt>
+                                <dd className="text-white">{formatKm(rec.serviceKm)}</dd>
+                              </div>
+                              {rec.nextServiceKm != null && (
+                                <div className="inline-flex items-center gap-1.5">
+                                  <dt className="text-ink-500">Növbəti:</dt>
+                                  <dd className="text-white">
+                                    {formatKm(rec.nextServiceKm)}
+                                  </dd>
+                                </div>
+                              )}
+                              {rec.serviceItemType === "OIL_CHANGE" &&
+                                (rec.oilBrand || rec.oilType) && (
+                                  <div className="inline-flex items-center gap-1.5">
+                                    <Droplet className="h-3 w-3 text-ink-500" />
+                                    <dd className="text-white">
+                                      {rec.oilBrand}
+                                      {rec.oilType ? ` · ${rec.oilType}` : ""}
+                                    </dd>
+                                  </div>
+                                )}
+                            </dl>
+
+                            {filters.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {filters.map((f) => (
+                                  <span
+                                    key={f}
+                                    className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 text-[11px] text-brand-200"
+                                  >
+                                    <Filter className="h-2.5 w-2.5" />
+                                    {f}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {rec.carServiceUsername && (
+                              <div className="mt-3 text-[11px] text-ink-500">
+                                @{rec.carServiceUsername}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
                 </div>
               )}
             </section>
@@ -727,6 +965,55 @@ export default function AdminPage() {
                       />
                     </label>
 
+                    <div>
+                      <span className={labelClass}>
+                        <Filter className="inline h-3 w-3 mr-1 text-brand-400" />
+                        Dəyişdirilən filtrlər
+                      </span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          {
+                            label: "Yağ filtri",
+                            checked: oilFilterChanged,
+                            set: setOilFilterChanged
+                          },
+                          {
+                            label: "Yanacaq filtri",
+                            checked: fuelFilterChanged,
+                            set: setFuelFilterChanged
+                          },
+                          {
+                            label: "Hava filtri",
+                            checked: airFilterChanged,
+                            set: setAirFilterChanged
+                          },
+                          {
+                            label: "Salon filtri",
+                            checked: cabinFilterChanged,
+                            set: setCabinFilterChanged
+                          }
+                        ].map((f) => (
+                          <label
+                            key={f.label}
+                            className={cn(
+                              "flex items-center gap-2.5 rounded-xl border-hairline px-3 py-2.5 text-sm cursor-pointer select-none transition-colors",
+                              f.checked
+                                ? "border-brand-500/40 bg-brand-500/10 text-white"
+                                : "bg-ink-900/60 text-ink-300 hover:bg-ink-900"
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={f.checked}
+                              onChange={(e) => f.set(e.target.checked)}
+                              className="h-4 w-4 rounded border-white/20 bg-ink-900 accent-brand-500"
+                            />
+                            {f.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
                       <label className="block">
                         <span className={labelClass}>
@@ -745,18 +1032,33 @@ export default function AdminPage() {
                       </label>
                       <label className="block">
                         <span className={labelClass}>
-                          <Calendar className="inline h-3 w-3 mr-1 text-brand-400" />
-                          Tarix
+                          <Gauge className="inline h-3 w-3 mr-1 text-brand-400" />
+                          Növbəti servis km
                         </span>
                         <input
-                          type="date"
-                          value={serviceDate}
-                          onChange={(e) => setServiceDate(e.target.value)}
-                          required
-                          className={cn(fieldClass, "scheme-dark")}
+                          type="number"
+                          value={nextServiceKm}
+                          onChange={(e) => setNextServiceKm(e.target.value)}
+                          placeholder="60000"
+                          min={0}
+                          className={fieldClass}
                         />
                       </label>
                     </div>
+
+                    <label className="block">
+                      <span className={labelClass}>
+                        <Calendar className="inline h-3 w-3 mr-1 text-brand-400" />
+                        Tarix
+                      </span>
+                      <input
+                        type="date"
+                        value={serviceDate}
+                        onChange={(e) => setServiceDate(e.target.value)}
+                        required
+                        className={cn(fieldClass, "scheme-dark")}
+                      />
+                    </label>
 
                     {createError && (
                       <div
@@ -836,6 +1138,28 @@ export default function AdminPage() {
           })}
         </div>
       </nav>
+
+      <CustomerFormModal
+        open={customerModalOpen}
+        editing={customerModalEditing}
+        onClose={() => setCustomerModalOpen(false)}
+        onSaved={handleCustomerSaved}
+      />
+
+      <ConfirmDialog
+        open={!!deleteCustomerTarget}
+        danger
+        title="Müştərini sil"
+        message={
+          deleteCustomerTarget
+            ? `${deleteCustomerTarget.fullName?.trim() || deleteCustomerTarget.plateNumber} (${deleteCustomerTarget.plateNumber}) müştərisi və bütün məlumatları silinsin?`
+            : undefined
+        }
+        confirmLabel="Sil"
+        loading={deletingCustomer}
+        onConfirm={confirmDeleteCustomer}
+        onCancel={() => setDeleteCustomerTarget(null)}
+      />
     </main>
   );
 }

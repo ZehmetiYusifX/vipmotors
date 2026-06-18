@@ -4,8 +4,10 @@ import type {
   CarPayload,
   CarServiceCredentials,
   CreateMaintenancePayload,
+  CustomerPayload,
   ForgotPasswordPayload,
   LoginUserPayload,
+  MaintenanceHistoryQuery,
   MaintenanceRecord,
   MotorOil,
   MotorOilPayload,
@@ -97,6 +99,35 @@ export const carServiceOps = {
       query: { plateNumber }
     });
   },
+  getCustomer(customerId: number) {
+    return apiRequest<UserProfile>(
+      `/api/v1/car-services/customers/${customerId}`,
+      { role: "CAR_SERVICE" }
+    );
+  },
+  createCustomer(payload: CustomerPayload) {
+    return apiRequest<UserProfile>("/api/v1/car-services/customers", {
+      method: "POST",
+      role: "CAR_SERVICE",
+      body: payload
+    });
+  },
+  updateCustomer(customerId: number, payload: CustomerPayload) {
+    return apiRequest<UserProfile>(
+      `/api/v1/car-services/customers/${customerId}`,
+      {
+        method: "PUT",
+        role: "CAR_SERVICE",
+        body: payload
+      }
+    );
+  },
+  deleteCustomer(customerId: number) {
+    return apiRequest<void>(`/api/v1/car-services/customers/${customerId}`, {
+      method: "DELETE",
+      role: "CAR_SERVICE"
+    });
+  },
   createMaintenance(payload: CreateMaintenancePayload) {
     return apiRequest<MaintenanceRecord>(
       "/api/v1/car-services/maintenances",
@@ -106,6 +137,20 @@ export const carServiceOps = {
         body: payload
       }
     );
+  },
+  maintenanceHistory(
+    query: MaintenanceHistoryQuery = {},
+    role: Role = "CAR_SERVICE",
+    signal?: AbortSignal
+  ) {
+    return apiRequest<MaintenanceRecord[]>("/api/v1/car-services/maintenances", {
+      role,
+      query: {
+        plateNumber: query.plateNumber,
+        customerId: query.customerId
+      },
+      signal
+    });
   }
 };
 

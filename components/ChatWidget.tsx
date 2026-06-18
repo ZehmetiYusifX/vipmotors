@@ -6,10 +6,18 @@ import { MessageCircle, X, Send, Sparkles, Paperclip } from "lucide-react";
 
 const WEBHOOK_URL = "/api/chat";
 
+// WhatsApp fallback shown when the bot needs more info or can't fully answer.
+const WHATSAPP_URL =
+  "https://wa.me/994552440646?text=" +
+  encodeURIComponent(
+    "Salam, VIP Motors Baku — avtomobilim üçün yağ seçimi ilə bağlı sualım var."
+  );
+
 type Message = {
   role: "bot" | "user";
   text: string;
   image?: string | null;
+  contact?: boolean;
 };
 
 export function useChatWidget() {
@@ -18,7 +26,7 @@ export function useChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "bot",
-      text: "Salam, xoş gəldiniz! VIP Motors Baku sizi salamlayır 👋\nMən sizə avtomobiliniz üçün ən uyğun yağı seçməkdə kömək edəcəm.\n\nZəhmət olmasa yazın:\n• Marka və model\n• İl\n• Mühərrik həcmi (məs. 2.0 mator və ya 2000cc)\n• Yanacaq növü (benzin / dizel / hibrid / elektrik)\n\nNümunə:\n— Honda Civic 2008 2.0 mator benzin\n— Mercedes E220 2015 2.2 dizel\n— BMW 320i 2019 2000cc benzin\n— Toyota Camry 2020 2.5 hibrid",
+      text: "Salam, xoş gəldiniz! VIP Motors Baku sizi salamlayır 👋\nMən sizə avtomobiliniz üçün ən uyğun yağı seçməkdə kömək edəcəm.\n\nZəhmət olmasa yazın:\n• Marka və model\n• İl\n• Mühərrik həcmi (məs. 2.0 mator və ya 2000cc)\n• Yanacaq növü (benzin / dizel / hibrid / elektrik)\n\nNümunə:\n— BMW 320i 2019 2.0 mator benzin\n— BMW 520d 2016 2.0 dizel\n— BMW X5 2020 3.0 mator benzin\n— BMW 530e 2021 hibrid",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -42,12 +50,16 @@ export function useChatWidget() {
       const data = await res.json();
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: data.reply || "Xəta baş verdi." },
+        {
+          role: "bot",
+          text: data.reply || "Xəta baş verdi.",
+          contact: Boolean(data.needsContact) || !data.reply,
+        },
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: "Bağlantı xətası. Yenidən cəhd edin." },
+        { role: "bot", text: "Bağlantı xətası. Yenidən cəhd edin.", contact: true },
       ]);
     } finally {
       setLoading(false);
@@ -178,6 +190,17 @@ export default function ChatWidget() {
                       />
                     )}
                     {m.text}
+                    {m.role === "bot" && m.contact && (
+                      <a
+                        href={WHATSAPP_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2.5 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Sualınız var? WhatsApp-da davam edin
+                      </a>
+                    )}
                   </div>
                 </motion.div>
               ))}

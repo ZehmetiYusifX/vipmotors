@@ -55,6 +55,7 @@ export default function DashboardPage() {
           year: user.year ?? new Date().getFullYear(),
           firstRegisteredKm: user.firstRegisteredKm ?? 0,
           currentKm: user.currentKm ?? 0,
+          nextServiceKm: user.nextServiceKm ?? null,
           oilBrand: user.oilBrand,
           oilType: user.oilType,
           lastServiceDate: user.lastServiceDate
@@ -118,18 +119,22 @@ export default function DashboardPage() {
   const currentKm = primaryCar?.currentKm ?? 0;
   const firstRegisteredKm = primaryCar?.firstRegisteredKm ?? 0;
   const kmSinceFirst = currentKm - firstRegisteredKm;
+  // Prefer the backend's authoritative next-service mileage; fall back to a
+  // fixed-interval estimate only when the API doesn't supply one.
+  const computedNextServiceKm =
+    currentKm + (NEXT_SERVICE_INTERVAL_KM - (kmSinceFirst % NEXT_SERVICE_INTERVAL_KM));
+  const nextServiceKm =
+    primaryCar?.nextServiceKm ?? user.nextServiceKm ?? computedNextServiceKm;
+  const kmLeft = nextServiceKm - currentKm;
   const usedRatio = Math.min(
     100,
     Math.max(
       0,
       Math.round(
-        ((kmSinceFirst % NEXT_SERVICE_INTERVAL_KM) / NEXT_SERVICE_INTERVAL_KM) * 100
+        ((NEXT_SERVICE_INTERVAL_KM - kmLeft) / NEXT_SERVICE_INTERVAL_KM) * 100
       )
     )
   );
-  const nextServiceKm =
-    currentKm + (NEXT_SERVICE_INTERVAL_KM - (kmSinceFirst % NEXT_SERVICE_INTERVAL_KM));
-  const kmLeft = nextServiceKm - currentKm;
   const ringColor =
     usedRatio < 60
       ? "text-emerald-400"

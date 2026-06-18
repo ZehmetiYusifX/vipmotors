@@ -169,13 +169,14 @@ export async function POST(req: NextRequest) {
     );
 
     if (!extractRaw) {
-      return NextResponse.json({ reply: "Cavab alına bilmədi." });
+      return NextResponse.json({ reply: "Cavab alına bilmədi.", needsContact: true });
     }
 
     const extracted = parseJson(extractRaw);
     if (!extracted || !extracted.brand) {
       return NextResponse.json({
-        reply: "Avtomobil markasını müəyyən edə bilmədim. Marka, model, il və yanacaq növünü yazın.\n\nNümunə: Mercedes E220 2015 dizel"
+        reply: "Avtomobil markasını müəyyən edə bilmədim. Marka, model, il və yanacaq növünü yazın.\n\nNümunə: BMW 520d 2016 dizel",
+        needsContact: true
       });
     }
 
@@ -189,7 +190,8 @@ export async function POST(req: NextRequest) {
     if (missing.length > 0) {
       const engineHint = extracted.engineCc ? `${(extracted.engineCc / 1000).toFixed(1)}` : "[mühərrik]";
       return NextResponse.json({
-        reply: `Dəqiq tövsiyə üçün bir az daha məlumat lazımdır. Zəhmət olmasa bunları da yazın: ${missing.join(", ")}.\n\nNümunə: ${extracted.brand} ${extracted.model ?? "[model]"} ${extracted.year ?? "[il]"} ${engineHint} ${extracted.fuel ? FUEL_LABEL[extracted.fuel].toLowerCase() : "[yanacaq]"}`
+        reply: `Dəqiq tövsiyə üçün bir az daha məlumat lazımdır. Zəhmət olmasa bunları da yazın: ${missing.join(", ")}.\n\nNümunə: ${extracted.brand} ${extracted.model ?? "[model]"} ${extracted.year ?? "[il]"} ${engineHint} ${extracted.fuel ? FUEL_LABEL[extracted.fuel].toLowerCase() : "[yanacaq]"}`,
+        needsContact: true
       });
     }
 
@@ -205,9 +207,14 @@ export async function POST(req: NextRequest) {
       1400
     );
 
-    return NextResponse.json({ reply: reply || "Cavab alına bilmədi." });
+    return NextResponse.json(
+      reply ? { reply } : { reply: "Cavab alına bilmədi.", needsContact: true }
+    );
   } catch (err: any) {
     console.error("Route error:", err);
-    return NextResponse.json({ reply: `Xəta: ${err?.message ?? "naməlum"}. Yenidən cəhd edin.` }, { status: 500 });
+    return NextResponse.json(
+      { reply: `Xəta: ${err?.message ?? "naməlum"}. Yenidən cəhd edin.`, needsContact: true },
+      { status: 500 }
+    );
   }
 }

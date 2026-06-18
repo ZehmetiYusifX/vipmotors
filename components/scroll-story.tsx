@@ -636,9 +636,6 @@ export function ScrollStory() {
                 </div>
                 <h3 className="relative mt-5 text-xl font-semibold text-white">{s.title}</h3>
                 <p className="relative mt-2 text-sm text-ink-300 leading-relaxed">{s.body}</p>
-                <div className="relative mt-5 flex items-center gap-1.5 text-xs font-medium text-brand-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Ətraflı <ArrowRight className="h-3 w-3" />
-                </div>
               </article>
             ))}
           </div>

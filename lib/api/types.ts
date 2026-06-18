@@ -14,6 +14,7 @@ export interface UserCar {
   year: number;
   firstRegisteredKm: number;
   currentKm: number;
+  nextServiceKm: number | null;
   oilBrand: string | null;
   oilType: string | null;
   lastServiceDate: string | null;
@@ -31,6 +32,7 @@ export interface UserProfile {
   year: number | null;
   firstRegisteredKm: number | null;
   currentKm: number | null;
+  nextServiceKm: number | null;
   oilBrand: string | null;
   oilType: string | null;
   lastServiceDate: string | null;
@@ -41,6 +43,7 @@ export interface UserProfile {
 export interface MaintenanceRecord {
   id: number;
   appUserId: number;
+  userCarId?: number;
   appUserFullName: string;
   customerPlateNumber: string;
   carServiceId: number;
@@ -52,6 +55,11 @@ export interface MaintenanceRecord {
   oilBrand: string;
   oilType: string;
   serviceKm: number;
+  nextServiceKm: number | null;
+  oilFilterChanged: boolean;
+  fuelFilterChanged: boolean;
+  airFilterChanged: boolean;
+  cabinFilterChanged: boolean;
   serviceDate: string;
 }
 
@@ -101,7 +109,40 @@ export interface CreateMaintenancePayload {
   oilBrand: string;
   oilType: string;
   serviceKm: number;
+  nextServiceKm?: number;
+  oilFilterChanged?: boolean;
+  fuelFilterChanged?: boolean;
+  airFilterChanged?: boolean;
+  cabinFilterChanged?: boolean;
   serviceDate: string;
+}
+
+export interface MaintenanceHistoryQuery {
+  plateNumber?: string;
+  customerId?: number;
+}
+
+/**
+ * Body for car-service customer create/update. Mirrors the flat shape the
+ * backend expects (single primary car embedded). `password` is required when
+ * creating and omitted when left blank on update; `enabled` toggles the account.
+ */
+export interface CustomerPayload {
+  phoneNumber: string;
+  fullName: string;
+  email: string;
+  password?: string;
+  plateNumber: string;
+  vinCode: string;
+  carBrand: string;
+  brandModel: string;
+  year: number;
+  firstRegisteredKm: number;
+  currentKm: number;
+  oilBrand: string | null;
+  oilType: string | null;
+  lastServiceDate: string | null;
+  enabled: boolean;
 }
 
 export interface Product {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, X } from "lucide-react";
 
 import { userCarsApi } from "@/lib/api/endpoints";
@@ -52,6 +52,16 @@ export function CarFormModal({ open, editing, onClose, onSaved }: CarFormModalPr
   const [form, setForm] = useState<CarPayload>(() => toPayload(editing));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // The modal stays mounted, so the useState initializer only runs once. Re-fill
+  // the form with the selected car's current data every time it opens (or the
+  // target car changes) so editing starts from the existing values, not blanks.
+  useEffect(() => {
+    if (open) {
+      setForm(toPayload(editing));
+      setError(null);
+    }
+  }, [open, editing]);
 
   if (!open) return null;
 
@@ -133,7 +143,7 @@ export function CarFormModal({ open, editing, onClose, onSaved }: CarFormModalPr
               className={fieldClass}
               value={form.carBrand}
               onChange={(e) => update("carBrand", e.target.value)}
-              placeholder="Toyota"
+              placeholder="BMW"
             />
           </div>
           <div>
@@ -143,7 +153,7 @@ export function CarFormModal({ open, editing, onClose, onSaved }: CarFormModalPr
               className={fieldClass}
               value={form.brandModel}
               onChange={(e) => update("brandModel", e.target.value)}
-              placeholder="Camry"
+              placeholder="320i"
             />
           </div>
           <div>

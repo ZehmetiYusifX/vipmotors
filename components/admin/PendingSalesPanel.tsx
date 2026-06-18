@@ -13,18 +13,7 @@ import {
 
 import { productsApi } from "@/lib/api/endpoints";
 import { ApiError, type ProductSale } from "@/lib/api/types";
-
-function formatDateTime(iso: string | null) {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat("az-AZ", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
-}
+import { formatAzDateTime as formatDateTime } from "@/lib/date";
 
 interface PendingSalesPanelProps {
   onUnauthorized: () => void;
