@@ -21,13 +21,16 @@ import {
   ShieldCheck,
   Trash2,
   UserPlus,
+  Users,
   Wrench
 } from "lucide-react";
 
 import { AdminAuth } from "@/components/app/AdminAuth";
 import { CustomerFormModal } from "@/components/admin/CustomerFormModal";
 import { InventoryPanel } from "@/components/admin/InventoryPanel";
+import { CustomersPanel } from "@/components/admin/CustomersPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
+import { ServicesPanel } from "@/components/admin/ServicesPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Select } from "@/components/ui/Select";
 import { carServiceAuth, carServiceOps, servicesApi } from "@/lib/api/endpoints";
@@ -42,7 +45,13 @@ import { cn } from "@/lib/cn";
 import { formatAzDate } from "@/lib/date";
 import { normalizePlate } from "@/lib/plate";
 
-type AdminSection = "search" | "inventory" | "oils" | "register-service";
+type AdminSection =
+  | "search"
+  | "inventory"
+  | "oils"
+  | "customers"
+  | "services"
+  | "register-service";
 
 type SearchState =
   | { status: "idle" }
@@ -65,6 +74,8 @@ const BASE_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> 
 ];
 
 const OWNER_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
+  { id: "customers", label: "Müştəri bazası", Icon: Users },
+  { id: "services", label: "Xidmət növləri", Icon: Wrench },
   { id: "register-service", label: "Yeni Servis", Icon: ShieldCheck }
 ];
 
@@ -72,6 +83,8 @@ const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = 
   search: { eyebrow: "Servis əməliyyatları", title: "Müştəri axtarışı" },
   inventory: { eyebrow: "Anbar idarəsi", title: "Məhsullar" },
   oils: { eyebrow: "Kataloq idarəsi", title: "Kataloq" },
+  customers: { eyebrow: "Owner idarəsi", title: "Müştəri bazası" },
+  services: { eyebrow: "Owner idarəsi", title: "Xidmət növləri" },
   "register-service": { eyebrow: "Owner idarəsi", title: "Yeni Servis Qeydiyyatı" }
 };
 
@@ -81,6 +94,8 @@ const NAV_SHORT: Record<AdminSection, string> = {
   search: "Axtarış",
   inventory: "Anbar",
   oils: "Kataloq",
+  customers: "Baza",
+  services: "Xidmət",
   "register-service": "Servis"
 };
 
@@ -106,6 +121,9 @@ export default function AdminPage() {
   const [serviceDate, setServiceDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
+  // Which of the customer's cars the new service record is for. Defaults to the
+  // primary plate; a selector appears when the customer has more than one car.
+  const [serviceCarPlate, setServiceCarPlate] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [lastCreated, setLastCreated] = useState<MaintenanceRecord | null>(null);
@@ -168,6 +186,40 @@ export default function AdminPage() {
     return <AdminAuth onAuthenticated={saveSession} />;
   }
 
+  // Load a resolved customer into the found-state and prime the maintenance
+  // form. Shared by plate search, free-text search and the save modal.
+  function applyCustomer(customer: UserProfile) {
+    setSearch({ status: "found", customer });
+    setPlate(customer.plateNumber);
+    setServiceCarPlate(customer.plateNumber);
+    setOilBrand(customer.oilBrand || "");
+    setOilType(customer.oilType || "");
+    setServiceKm(String(customer.currentKm || ""));
+    setNextServiceKm(
+      customer.nextServiceKm != null ? String(customer.nextServiceKm) : ""
+    );
+    setOilFilterChanged(false);
+    setFuelFilterChanged(false);
+    setAirFilterChanged(false);
+    setCabinFilterChanged(false);
+    setLastCreated(null);
+    setCreateError(null);
+    void loadHistory(customer);
+  }
+
+  // Switch the service form to a specific car and pull its oil/km defaults so
+  // the operator logs the record against the right vehicle.
+  function selectServiceCar(plateNumber: string) {
+    setServiceCarPlate(plateNumber);
+    const c = search.status === "found" ? search.customer : null;
+    const car = c?.cars?.find((x) => x.plateNumber === plateNumber);
+    if (!car) return;
+    setOilBrand(car.oilBrand || "");
+    setOilType(car.oilType || "");
+    setServiceKm(String(car.currentKm || ""));
+    setNextServiceKm(car.nextServiceKm != null ? String(car.nextServiceKm) : "");
+  }
+
   async function runSearch(event?: React.FormEvent) {
     event?.preventDefault();
     const trimmed = normalizePlate(plate);
@@ -178,18 +230,7 @@ export default function AdminPage() {
     setHistory([]);
     try {
       const customer = await carServiceOps.findCustomerByPlate(trimmed);
-      setSearch({ status: "found", customer });
-      setOilBrand(customer.oilBrand || "");
-      setOilType(customer.oilType || "");
-      setServiceKm(String(customer.currentKm || ""));
-      setNextServiceKm(
-        customer.nextServiceKm != null ? String(customer.nextServiceKm) : ""
-      );
-      setOilFilterChanged(false);
-      setFuelFilterChanged(false);
-      setAirFilterChanged(false);
-      setCabinFilterChanged(false);
-      void loadHistory(customer);
+      applyCustomer(customer);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         setSearch({ status: "not_found", plate: trimmed });
@@ -215,7 +256,7 @@ export default function AdminPage() {
     setCreating(true);
     try {
       const record = await carServiceOps.createMaintenance({
-        plateNumber: search.customer.plateNumber,
+        plateNumber: serviceCarPlate || search.customer.plateNumber,
         serviceItemId: selectedServiceId,
         workDescription: workDescription.trim(),
         oilBrand: isOilChange ? oilBrand.trim() : "",
@@ -274,16 +315,9 @@ export default function AdminPage() {
     setCustomerModalOpen(true);
   }
 
-  async function handleCustomerSaved(saved: UserProfile) {
+  function handleCustomerSaved(saved: UserProfile) {
     // Reflect the saved customer in the search view and refresh its history.
-    setSearch({ status: "found", customer: saved });
-    setPlate(saved.plateNumber);
-    setOilBrand(saved.oilBrand || "");
-    setOilType(saved.oilType || "");
-    setServiceKm(String(saved.currentKm || ""));
-    setNextServiceKm(saved.nextServiceKm != null ? String(saved.nextServiceKm) : "");
-    setLastCreated(null);
-    await loadHistory(saved);
+    applyCustomer(saved);
   }
 
   async function confirmDeleteCustomer() {
@@ -460,6 +494,14 @@ export default function AdminPage() {
 
           {activeSection === "oils" && (
             <OilCatalogPanel onUnauthorized={logout} />
+          )}
+
+          {activeSection === "customers" && isOwner && (
+            <CustomersPanel onUnauthorized={logout} />
+          )}
+
+          {activeSection === "services" && isOwner && (
+            <ServicesPanel onUnauthorized={logout} />
           )}
 
           {activeSection === "register-service" && isOwner && (
@@ -793,9 +835,17 @@ export default function AdminPage() {
                             className="rounded-xl border-hairline bg-ink-900/60 p-4"
                           >
                             <div className="flex items-start justify-between gap-3">
-                              <strong className="text-sm text-white">
-                                {rec.serviceItemTitle || "Servis"}
-                              </strong>
+                              <div className="min-w-0">
+                                <strong className="text-sm text-white">
+                                  {rec.serviceItemTitle || "Servis"}
+                                </strong>
+                                {rec.carName && (
+                                  <span className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-400">
+                                    <Car className="h-3 w-3" />
+                                    {rec.carName}
+                                  </span>
+                                )}
+                              </div>
                               <span className="inline-flex items-center gap-1 text-xs text-ink-400 shrink-0">
                                 <Calendar className="h-3 w-3" />
                                 {formatDate(rec.serviceDate)}
@@ -881,14 +931,30 @@ export default function AdminPage() {
                     className="flex flex-col gap-4 disabled:opacity-60"
                   >
                     <label className="block">
-                      <span className={labelClass}>DQN</span>
-                      <input
-                        type="text"
-                        value={customer ? customer.plateNumber : ""}
-                        readOnly
-                        placeholder="Əvvəl müştərini tapın"
-                        className={cn(fieldClass, "font-mono tracking-wider")}
-                      />
+                      <span className={labelClass}>
+                        <Car className="inline h-3 w-3 mr-1 text-brand-400" />
+                        Avtomobil
+                      </span>
+                      {customer && customer.cars.length > 1 ? (
+                        <Select
+                          value={serviceCarPlate || customer.plateNumber}
+                          onChange={selectServiceCar}
+                          options={customer.cars.map((car) => ({
+                            value: car.plateNumber,
+                            label: `${car.plateNumber} · ${[car.carBrand, car.brandModel]
+                              .filter(Boolean)
+                              .join(" ")}`
+                          }))}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={customer ? serviceCarPlate || customer.plateNumber : ""}
+                          readOnly
+                          placeholder="Əvvəl müştərini tapın"
+                          className={cn(fieldClass, "font-mono tracking-wider")}
+                        />
+                      )}
                     </label>
 
                     <label className="block">

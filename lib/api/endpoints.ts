@@ -5,6 +5,7 @@ import type {
   CarServiceCredentials,
   CreateMaintenancePayload,
   CustomerPayload,
+  CustomerSearchQuery,
   ForgotPasswordPayload,
   LoginUserPayload,
   MaintenanceHistoryQuery,
@@ -20,6 +21,7 @@ import type {
   Role,
   SellPayload,
   ServiceItem,
+  ServiceItemPayload,
   UserCar,
   UserProfile
 } from "./types";
@@ -39,6 +41,14 @@ export const userAuth = {
   },
   me() {
     return apiRequest<UserProfile>("/api/v1/users/me", { role: "USER" });
+  },
+  // Service history for the logged-in user — dedicated endpoint, unlike the
+  // car-service one which is gated to operators.
+  maintenanceHistory(signal?: AbortSignal) {
+    return apiRequest<MaintenanceRecord[]>("/api/v1/users/me/maintenances", {
+      role: "USER",
+      signal
+    });
   },
   forgotPassword(payload: ForgotPasswordPayload) {
     return apiRequest<{ message: string }>("/api/v1/auth/forgot-password", {
@@ -98,6 +108,20 @@ export const carServiceOps = {
       role: "CAR_SERVICE",
       query: { plateNumber }
     });
+  },
+  // Customer base lookup. Both params are optional: `search` matches
+  // name/phone/plate, `plateNumber` filters by exact plate. With neither it
+  // lists the whole base. Backend may return a single object or an array, so
+  // callers must normalise.
+  searchCustomers(query: CustomerSearchQuery = {}, signal?: AbortSignal) {
+    return apiRequest<UserProfile | UserProfile[]>(
+      "/api/v1/car-services/customers",
+      {
+        role: "CAR_SERVICE",
+        query: { search: query.search, plateNumber: query.plateNumber },
+        signal
+      }
+    );
   },
   getCustomer(customerId: number) {
     return apiRequest<UserProfile>(
@@ -311,6 +335,31 @@ export const servicesApi = {
     return apiRequest<ServiceItem[]>("/api/v1/services", {
       role,
       signal
+    });
+  },
+  getById(id: number) {
+    return apiRequest<ServiceItem>(`/api/v1/services/${id}`, {
+      role: "CAR_SERVICE"
+    });
+  },
+  create(payload: ServiceItemPayload) {
+    return apiRequest<ServiceItem>("/api/v1/services", {
+      method: "POST",
+      role: "CAR_SERVICE",
+      body: payload
+    });
+  },
+  update(id: number, payload: ServiceItemPayload) {
+    return apiRequest<ServiceItem>(`/api/v1/services/${id}`, {
+      method: "PUT",
+      role: "CAR_SERVICE",
+      body: payload
+    });
+  },
+  remove(id: number) {
+    return apiRequest<void>(`/api/v1/services/${id}`, {
+      method: "DELETE",
+      role: "CAR_SERVICE"
     });
   }
 };

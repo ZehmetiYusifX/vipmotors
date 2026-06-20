@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Droplet, Filter, Gauge, Loader2, MessageCircle, Wrench } from "lucide-react";
+import { Calendar, Car, Droplet, Filter, Gauge, Loader2, MessageCircle, Wrench } from "lucide-react";
 
-import { carServiceOps } from "@/lib/api/endpoints";
+import { userAuth } from "@/lib/api/endpoints";
 import type { MaintenanceRecord, UserCar } from "@/lib/api/types";
 import { formatDate, formatKm } from "../format";
 import { SectionHeader } from "./SectionHeader";
@@ -18,18 +18,12 @@ export function HistorySection({ primaryCar }: HistorySectionProps) {
   const [records, setRecords] = useState<MaintenanceRecord[] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const plateNumber = primaryCar?.plateNumber;
-
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
     setLoading(true);
-    carServiceOps
-      .maintenanceHistory(
-        plateNumber ? { plateNumber } : {},
-        "USER",
-        controller.signal
-      )
+    userAuth
+      .maintenanceHistory(controller.signal)
       .then((data) => {
         if (active) setRecords(Array.isArray(data) ? data : []);
       })
@@ -44,7 +38,7 @@ export function HistorySection({ primaryCar }: HistorySectionProps) {
       active = false;
       controller.abort();
     };
-  }, [plateNumber]);
+  }, []);
 
   const hasRecords = records != null && records.length > 0;
 
@@ -88,12 +82,20 @@ export function HistorySection({ primaryCar }: HistorySectionProps) {
                 </span>
                 <div className="flex-1 rounded-xl border-hairline bg-ink-900/60 p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <strong className="block text-white">
-                      {rec.serviceItemTitle || "Servis"}
-                      {rec.serviceItemType === "OIL_CHANGE" && rec.oilBrand
-                        ? ` · ${rec.oilBrand}${rec.oilType ? ` (${rec.oilType})` : ""}`
-                        : ""}
-                    </strong>
+                    <div className="min-w-0">
+                      <strong className="block text-white">
+                        {rec.serviceItemTitle || "Servis"}
+                        {rec.serviceItemType === "OIL_CHANGE" && rec.oilBrand
+                          ? ` · ${rec.oilBrand}${rec.oilType ? ` (${rec.oilType})` : ""}`
+                          : ""}
+                      </strong>
+                      {rec.carName && (
+                        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-ink-400">
+                          <Car className="h-3 w-3" />
+                          {rec.carName}
+                        </span>
+                      )}
+                    </div>
                     <span className="inline-flex items-center gap-1 text-xs text-ink-400 shrink-0">
                       <Calendar className="h-3 w-3" />
                       {formatDate(rec.serviceDate)}

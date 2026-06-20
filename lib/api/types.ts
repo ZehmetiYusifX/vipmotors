@@ -44,6 +44,7 @@ export interface MaintenanceRecord {
   id: number;
   appUserId: number;
   userCarId?: number;
+  carName?: string | null;
   appUserFullName: string;
   customerPlateNumber: string;
   carServiceId: number;
@@ -185,6 +186,18 @@ export interface ServiceItem {
   icon: string;
   title: string;
   description: string;
+}
+
+export interface ServiceItemPayload {
+  type: ServiceType;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export interface CustomerSearchQuery {
+  search?: string;
+  plateNumber?: string;
 }
 
 export type SaleStatus = "PENDING" | "CONFIRMED";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, X } from "lucide-react";
+import { AlertCircle, Car, Loader2, X } from "lucide-react";
 
 import { carServiceOps } from "@/lib/api/endpoints";
 import {
@@ -179,6 +179,43 @@ export function CustomerFormModal({
         </div>
 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+          {editing && (editing.cars?.length ?? 0) > 1 && (
+            <div className="sm:col-span-2 rounded-xl border-hairline bg-ink-900/40 p-4">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-ink-400">
+                <Car className="h-3.5 w-3.5" />
+                Bu müştərinin avtomobilləri ({editing.cars!.length})
+              </div>
+              <ul className="mt-3 space-y-2">
+                {editing.cars!.map((car) => {
+                  const isPrimary = car.plateNumber === editing.plateNumber;
+                  return (
+                    <li
+                      key={car.id}
+                      className="flex items-center gap-2.5 rounded-lg bg-ink-950/50 px-3 py-2 text-sm"
+                    >
+                      <span className="font-mono font-semibold tracking-wider text-white">
+                        {car.plateNumber}
+                      </span>
+                      <span className="text-ink-400 truncate">
+                        {[car.carBrand, car.brandModel].filter(Boolean).join(" ")}
+                      </span>
+                      {isPrimary && (
+                        <span className="ml-auto shrink-0 rounded-full bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 text-[10px] text-brand-200">
+                          Əsas
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-3 text-[11px] text-ink-500">
+                Aşağıdakı forma yalnız <strong className="text-ink-300">əsas</strong>{" "}
+                avtomobili redaktə edir. Digər avtomobillər müştərinin öz tətbiqindən
+                idarə olunur.
+              </p>
+            </div>
+          )}
+
           <div className="sm:col-span-2">
             <label className={labelClass}>Ad Soyad</label>
             <input
