@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findBrand, pickSpec, FuelType, OilSpec } from "@/lib/oil/database";
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const OPENAI_MODEL = "gpt-5.1";
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_MODEL = "gemini-2.5-pro";
 
 const EXTRACT_PROMPT = `Sən avtomobil məlumatlarını çıxaran assistant-san. İstifadəçinin mesajından və/və ya texpasport şəklindən bu məlumatları çıxar və YALNIZ JSON qaytar:
 
@@ -125,25 +125,38 @@ QAYDALAR:
 - Elektrik avtomobildə yağ tutumu və interval "—" yaz.`;
 }
 
-async function callOpenAI(messages: any[], maxTokens: number) {
-  const response = await fetch(OPENAI_URL, {
+// Gemini generateContent. `systemPrompt` becomes systemInstruction; `parts`
+// is the user turn (text and/or inline image). gemini-2.5-pro always reasons,
+// so maxOutputTokens must leave generous headroom above the visible answer —
+// otherwise hidden thinking tokens eat the budget and the text comes back empty.
+async function callGemini(systemPrompt: string | null, parts: any[], maxTokens: number) {
+  const body: any = {
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.2
+    }
+  };
+  if (systemPrompt) {
+    body.systemInstruction = { parts: [{ text: systemPrompt }] };
+  }
+
+  const response = await fetch(`${GEMINI_URL}/${GEMINI_MODEL}:generateContent`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_KEY}`
+      "x-goog-api-key": GEMINI_KEY ?? ""
     },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      max_completion_tokens: maxTokens,
-      reasoning_effort: "low",
-      messages
-    })
+    body: JSON.stringify(body)
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data?.error?.message ?? `OpenAI ${response.status}`);
+    throw new Error(data?.error?.message ?? `Gemini ${response.status}`);
   }
-  return data.choices?.[0]?.message?.content as string | undefined;
+  const text = data.candidates?.[0]?.content?.parts
+    ?.map((p: any) => p.text ?? "")
+    .join("");
+  return (text || undefined) as string | undefined;
 }
 
 export async function POST(req: NextRequest) {
@@ -151,22 +164,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { message, image } = body;
 
-    const userContent: any[] = [];
+    const userParts: any[] = [];
     if (image) {
-      userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
+      userParts.push({ inlineData: { mimeType: "image/jpeg", data: image } });
     }
-    userContent.push({
-      type: "text",
+    userParts.push({
       text: message || "Şəkili analiz et və avtomobil məlumatlarını çıxar."
     });
 
-    const extractRaw = await callOpenAI(
-      [
-        { role: "system", content: EXTRACT_PROMPT },
-        { role: "user", content: userContent }
-      ],
-      1200
-    );
+    const extractRaw = await callGemini(EXTRACT_PROMPT, userParts, 4096);
 
     if (!extractRaw) {
       return NextResponse.json({ reply: "Cavab alına bilmədi.", needsContact: true });
@@ -202,9 +208,10 @@ export async function POST(req: NextRequest) {
       ? pickSpec(brandMatch.entry, extracted.year, extracted.fuel).spec
       : null;
 
-    const reply = await callOpenAI(
-      [{ role: "user", content: buildRecommendPrompt(extracted, dbReference) }],
-      1400
+    const reply = await callGemini(
+      null,
+      [{ text: buildRecommendPrompt(extracted, dbReference) }],
+      4096
     );
 
     return NextResponse.json(
