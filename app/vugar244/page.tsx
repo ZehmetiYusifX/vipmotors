@@ -32,6 +32,7 @@ import { CustomersPanel } from "@/components/admin/CustomersPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
 import { ServicesPanel } from "@/components/admin/ServicesPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { NumberInput } from "@/components/ui/NumberInput";
 import { Select } from "@/components/ui/Select";
 import { carServiceAuth, carServiceOps, servicesApi } from "@/lib/api/endpoints";
 import {
@@ -1086,12 +1087,10 @@ export default function AdminPage() {
                           <Gauge className="inline h-3 w-3 mr-1 text-brand-400" />
                           Servis km
                         </span>
-                        <input
-                          type="number"
+                        <NumberInput
                           value={serviceKm}
-                          onChange={(e) => setServiceKm(e.target.value)}
+                          onValueChange={(v) => setServiceKm(v === null ? "" : String(v))}
                           placeholder="50000"
-                          min={0}
                           required
                           className={fieldClass}
                         />
@@ -1101,12 +1100,10 @@ export default function AdminPage() {
                           <Gauge className="inline h-3 w-3 mr-1 text-brand-400" />
                           Növbəti servis km
                         </span>
-                        <input
-                          type="number"
+                        <NumberInput
                           value={nextServiceKm}
-                          onChange={(e) => setNextServiceKm(e.target.value)}
+                          onValueChange={(v) => setNextServiceKm(v === null ? "" : String(v))}
                           placeholder="60000"
-                          min={0}
                           className={fieldClass}
                         />
                       </label>

@@ -10,6 +10,7 @@ import {
   type UserProfile
 } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
+import { NumberInput } from "@/components/ui/NumberInput";
 import {
   AZ_DIAL_CODE,
   normalizeLocalPhone,
@@ -301,13 +302,11 @@ export function CustomerFormModal({
           </div>
           <div>
             <label className={labelClass}>Buraxılış ili</label>
-            <input
-              type="number"
-              min={1950}
-              max={2100}
+            <NumberInput
               className={fieldClass}
               value={form.year}
-              onChange={(e) => update("year", Number(e.target.value))}
+              onValueChange={(v) => update("year", v ?? 0)}
+              placeholder="2020"
             />
           </div>
           <div>
@@ -321,22 +320,20 @@ export function CustomerFormModal({
           </div>
           <div>
             <label className={labelClass}>İlk qeydiyyat km</label>
-            <input
-              type="number"
-              min={0}
+            <NumberInput
               className={fieldClass}
               value={form.firstRegisteredKm}
-              onChange={(e) => update("firstRegisteredKm", Number(e.target.value))}
+              onValueChange={(v) => update("firstRegisteredKm", v ?? 0)}
+              placeholder="0"
             />
           </div>
           <div>
             <label className={labelClass}>Cari km</label>
-            <input
-              type="number"
-              min={0}
+            <NumberInput
               className={fieldClass}
               value={form.currentKm}
-              onChange={(e) => update("currentKm", Number(e.target.value))}
+              onValueChange={(v) => update("currentKm", v ?? 0)}
+              placeholder="0"
             />
           </div>
           <div>

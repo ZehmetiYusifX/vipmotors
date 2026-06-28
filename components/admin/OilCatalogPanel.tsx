@@ -17,6 +17,7 @@ import { ApiError, type MotorOil, type MotorOilPayload } from "@/lib/api/types";
 import { resolveImageUrl } from "@/lib/media";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, type ToastState } from "@/components/ui/Toast";
+import { NumberInput } from "@/components/ui/NumberInput";
 
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
@@ -416,14 +417,13 @@ export function OilCatalogPanel({ onUnauthorized }: { onUnauthorized: () => void
               </div>
               <div>
                 <label className={labelClass}>Qiymət (₼)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <NumberInput
+                  decimal
                   required
                   className={fieldClass}
                   value={form.oilPrice}
-                  onChange={(e) => setForm((f) => ({ ...f, oilPrice: Number(e.target.value) }))}
+                  onValueChange={(v) => setForm((f) => ({ ...f, oilPrice: v ?? 0 }))}
+                  placeholder="0"
                 />
               </div>
 

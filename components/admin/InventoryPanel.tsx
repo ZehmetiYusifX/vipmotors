@@ -21,6 +21,7 @@ import { ApiError, type Product, type ProductPayload } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, type ToastState } from "@/components/ui/Toast";
+import { NumberInput } from "@/components/ui/NumberInput";
 import { PendingSalesPanel } from "./PendingSalesPanel";
 
 const fieldClass =
@@ -658,40 +659,31 @@ export function InventoryPanel({
               </div>
               <div>
                 <label className={labelClass}>Qiymət (₼)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <NumberInput
+                  decimal
                   required
                   className={fieldClass}
                   value={form.price}
-                  onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))}
+                  onValueChange={(v) => setForm((f) => ({ ...f, price: v ?? 0 }))}
+                  placeholder="0"
                 />
               </div>
               <div>
                 <label className={labelClass}>Stok sayı</label>
-                <input
-                  type="number"
-                  min="0"
+                <NumberInput
                   required
                   className={fieldClass}
                   value={form.count}
-                  onChange={(e) => setForm((f) => ({ ...f, count: Number(e.target.value) }))}
+                  onValueChange={(v) => setForm((f) => ({ ...f, count: v ?? 0 }))}
+                  placeholder="0"
                 />
               </div>
               <div>
                 <label className={labelClass}>Rəf № (anbar)</label>
-                <input
-                  type="number"
-                  min="0"
+                <NumberInput
                   className={fieldClass}
-                  value={form.shelf ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      shelf: e.target.value === "" ? null : Number(e.target.value)
-                    }))
-                  }
+                  value={form.shelf}
+                  onValueChange={(v) => setForm((f) => ({ ...f, shelf: v }))}
                   placeholder="3"
                 />
               </div>
@@ -779,13 +771,11 @@ export function InventoryPanel({
               </div>
               <div>
                 <label className={labelClass}>Satılacaq say</label>
-                <input
-                  type="number"
-                  min="1"
-                  max={sellOpenFor.count}
+                <NumberInput
                   className={fieldClass}
                   value={sellCount}
-                  onChange={(e) => setSellCount(e.target.value)}
+                  onValueChange={(v) => setSellCount(v === null ? "" : String(v))}
+                  placeholder="0"
                 />
               </div>
               {sellError && (

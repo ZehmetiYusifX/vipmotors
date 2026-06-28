@@ -7,6 +7,7 @@ import { userCarsApi } from "@/lib/api/endpoints";
 import { ApiError, type CarPayload, type UserCar } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
 import { normalizePlate } from "@/lib/plate";
+import { NumberInput } from "@/components/ui/NumberInput";
 
 const fieldClass =
   "w-full rounded-xl border-hairline bg-ink-900/60 px-4 py-3 text-white placeholder:text-ink-500 outline-none focus:border-brand-500/50 focus:bg-ink-900 transition-colors";
@@ -158,14 +159,12 @@ export function CarFormModal({ open, editing, onClose, onSaved }: CarFormModalPr
           </div>
           <div>
             <label className={labelClass}>Buraxılış ili</label>
-            <input
-              type="number"
-              min={1950}
-              max={2100}
+            <NumberInput
               required
               className={fieldClass}
               value={form.year}
-              onChange={(e) => update("year", Number(e.target.value))}
+              onValueChange={(v) => update("year", v ?? 0)}
+              placeholder="2020"
             />
           </div>
           <div>
