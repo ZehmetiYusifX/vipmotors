@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Car,
   ChevronRight,
+  History,
   Loader2,
   Pencil,
   Phone,
@@ -21,6 +22,7 @@ import {
   type UserProfile
 } from "@/lib/api/types";
 import { CustomerFormModal } from "@/components/admin/CustomerFormModal";
+import { CustomerHistoryModal } from "@/components/admin/CustomerHistoryModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, type ToastState } from "@/components/ui/Toast";
 
@@ -85,6 +87,7 @@ export function CustomersPanel({
 
   const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [historyFor, setHistoryFor] = useState<UserProfile | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   async function load(params: CustomerSearchQuery = {}, signal?: AbortSignal) {
@@ -166,6 +169,11 @@ export function CustomersPanel({
           <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-white flex items-center gap-2">
             <Users className="h-5 w-5 text-brand-400" />
             Müştəri bazası
+            {!loading && (
+              <span className="rounded-full bg-brand-500/10 border border-brand-500/20 px-2.5 py-0.5 text-sm font-medium text-brand-200">
+                {customers.length}
+              </span>
+            )}
           </h2>
           <p className="mt-1 text-sm text-ink-400">
             Bütün müştəriləri ad, telefon və ya nömrə ilə axtar, yarat, redaktə
@@ -277,6 +285,15 @@ export function CustomersPanel({
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
+                  onClick={() => setHistoryFor(c)}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-300 hover:bg-white/5 hover:text-brand-200"
+                  aria-label="Servis tarixçəsi"
+                  title="Servis tarixçəsi"
+                >
+                  <History className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => openEdit(c)}
                   className="grid h-8 w-8 place-items-center rounded-lg text-ink-300 hover:bg-white/5 hover:text-white"
                   aria-label="Redaktə"
@@ -303,6 +320,12 @@ export function CustomersPanel({
         editing={editing}
         onClose={() => setModalOpen(false)}
         onSaved={handleSaved}
+      />
+
+      <CustomerHistoryModal
+        customer={historyFor}
+        onClose={() => setHistoryFor(null)}
+        onUnauthorized={onUnauthorized}
       />
 
       <ConfirmDialog

@@ -113,6 +113,7 @@ export default function AdminPage() {
 
   const [oilBrand, setOilBrand] = useState("");
   const [oilType, setOilType] = useState("");
+  const [oilLiters, setOilLiters] = useState("");
   const [serviceKm, setServiceKm] = useState("");
   const [nextServiceKm, setNextServiceKm] = useState("");
   const [oilFilterChanged, setOilFilterChanged] = useState(false);
@@ -195,6 +196,7 @@ export default function AdminPage() {
     setServiceCarPlate(customer.plateNumber);
     setOilBrand(customer.oilBrand || "");
     setOilType(customer.oilType || "");
+    setOilLiters("");
     setServiceKm(String(customer.currentKm || ""));
     setNextServiceKm(
       customer.nextServiceKm != null ? String(customer.nextServiceKm) : ""
@@ -217,6 +219,7 @@ export default function AdminPage() {
     if (!car) return;
     setOilBrand(car.oilBrand || "");
     setOilType(car.oilType || "");
+    setOilLiters("");
     setServiceKm(String(car.currentKm || ""));
     setNextServiceKm(car.nextServiceKm != null ? String(car.nextServiceKm) : "");
   }
@@ -262,6 +265,7 @@ export default function AdminPage() {
         workDescription: workDescription.trim(),
         oilBrand: isOilChange ? oilBrand.trim() : "",
         oilType: isOilChange ? oilType.trim() : "",
+        oilLiters: isOilChange && oilLiters ? Number(oilLiters) : undefined,
         serviceKm: Number(serviceKm),
         nextServiceKm: nextServiceKm ? Number(nextServiceKm) : undefined,
         oilFilterChanged,
@@ -769,7 +773,11 @@ export default function AdminPage() {
                         ? [
                             {
                               dt: "Yağ",
-                              dd: `${lastCreated.oilBrand} · ${lastCreated.oilType}`
+                              dd: `${lastCreated.oilBrand} · ${lastCreated.oilType}${
+                                lastCreated.oilLiters
+                                  ? ` · ${lastCreated.oilLiters} L`
+                                  : ""
+                              }`
                             }
                           ]
                         : []),
@@ -880,6 +888,7 @@ export default function AdminPage() {
                                     <dd className="text-white">
                                       {rec.oilBrand}
                                       {rec.oilType ? ` · ${rec.oilType}` : ""}
+                                      {rec.oilLiters ? ` · ${rec.oilLiters} L` : ""}
                                     </dd>
                                   </div>
                                 )}
@@ -1016,6 +1025,22 @@ export default function AdminPage() {
                             <option key={t} value={t} />
                           ))}
                         </datalist>
+                      </label>
+                      <label className="block">
+                        <span className={labelClass}>
+                          <Droplet className="inline h-3 w-3 mr-1 text-brand-400" />
+                          Yağ miqdarı (litr)
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={oilLiters}
+                          onChange={(e) =>
+                            setOilLiters(e.target.value.replace(/[^0-9.]/g, ""))
+                          }
+                          placeholder="4.5"
+                          className={fieldClass}
+                        />
                       </label>
                     </div>
                     )}

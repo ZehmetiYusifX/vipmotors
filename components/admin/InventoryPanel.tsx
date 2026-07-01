@@ -51,6 +51,7 @@ const EMPTY_FORM: ProductPayload = {
   price: 0,
   count: 0,
   shelf: null,
+  engineCode: [],
   model: [],
   similarProducts: [],
   crossReferenceOemEquivalents: []
@@ -66,6 +67,7 @@ function toFormState(p: Product | null): ProductPayload {
     price: p.price,
     count: p.count,
     shelf: p.shelf,
+    engineCode: p.engineCode ?? [],
     model: p.model ?? [],
     similarProducts: p.similarProducts ?? [],
     crossReferenceOemEquivalents: p.crossReferenceOemEquivalents ?? []
@@ -104,6 +106,7 @@ export function InventoryPanel({
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductPayload>({ ...EMPTY_FORM });
+  const [engineCodeInput, setEngineCodeInput] = useState("");
   const [modelInput, setModelInput] = useState("");
   const [similarInput, setSimilarInput] = useState("");
   const [crossRefInput, setCrossRefInput] = useState("");
@@ -149,6 +152,7 @@ export function InventoryPanel({
   function openCreate() {
     setEditing(null);
     setForm({ ...EMPTY_FORM });
+    setEngineCodeInput("");
     setModelInput("");
     setSimilarInput("");
     setCrossRefInput("");
@@ -160,6 +164,7 @@ export function InventoryPanel({
   function openEdit(p: Product) {
     setEditing(p);
     setForm(toFormState(p));
+    setEngineCodeInput((p.engineCode ?? []).join(", "));
     setModelInput((p.model ?? []).join(", "));
     setSimilarInput((p.similarProducts ?? []).join(", "));
     setCrossRefInput((p.crossReferenceOemEquivalents ?? []).join(", "));
@@ -192,10 +197,12 @@ export function InventoryPanel({
         price: typeof found.price === "number" ? found.price : 0,
         count: typeof found.count === "number" ? found.count : 0,
         shelf: found.shelf ?? null,
+        engineCode: found.engineCode ?? [],
         model: found.model ?? [],
         similarProducts: found.similarProducts ?? [],
         crossReferenceOemEquivalents: found.crossReferenceOemEquivalents ?? []
       });
+      setEngineCodeInput((found.engineCode ?? []).join(", "));
       setModelInput((found.model ?? []).join(", "));
       setSimilarInput((found.similarProducts ?? []).join(", "));
       setCrossRefInput((found.crossReferenceOemEquivalents ?? []).join(", "));
@@ -230,6 +237,10 @@ export function InventoryPanel({
           ? null
           : Number(form.shelf),
       category: form.category?.trim() || null,
+      engineCode: engineCodeInput
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
       model: modelInput
         .split(",")
         .map((s) => s.trim())
@@ -685,6 +696,15 @@ export function InventoryPanel({
                   value={form.shelf}
                   onValueChange={(v) => setForm((f) => ({ ...f, shelf: v }))}
                   placeholder="3"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Mühərrik nömrəsi / kodu (vergüllə ayır)</label>
+                <input
+                  className={fieldClass}
+                  value={engineCodeInput}
+                  onChange={(e) => setEngineCodeInput(e.target.value)}
+                  placeholder="N20, EA888, 2.0 TDI"
                 />
               </div>
               <div className="sm:col-span-2">

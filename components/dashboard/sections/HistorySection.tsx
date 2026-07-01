@@ -86,7 +86,9 @@ export function HistorySection({ primaryCar }: HistorySectionProps) {
                       <strong className="block text-white">
                         {rec.serviceItemTitle || "Servis"}
                         {rec.serviceItemType === "OIL_CHANGE" && rec.oilBrand
-                          ? ` · ${rec.oilBrand}${rec.oilType ? ` (${rec.oilType})` : ""}`
+                          ? ` · ${rec.oilBrand}${rec.oilType ? ` (${rec.oilType})` : ""}${
+                              rec.oilLiters ? ` · ${rec.oilLiters} L` : ""
+                            }`
                           : ""}
                       </strong>
                       {rec.carName && (

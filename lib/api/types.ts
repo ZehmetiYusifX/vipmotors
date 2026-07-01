@@ -55,6 +55,7 @@ export interface MaintenanceRecord {
   workDescription?: string;
   oilBrand: string;
   oilType: string;
+  oilLiters?: number | null;
   serviceKm: number;
   nextServiceKm: number | null;
   oilFilterChanged: boolean;
@@ -117,6 +118,7 @@ export interface CreateMaintenancePayload {
   workDescription?: string;
   oilBrand: string;
   oilType: string;
+  oilLiters?: number | null;
   serviceKm: number;
   nextServiceKm?: number;
   oilFilterChanged?: boolean;
@@ -159,10 +161,12 @@ export interface Product {
   product: string;
   partNumber: string;
   brand: string;
+  status?: string | null;
   category: string | null;
   price: number;
   count: number;
   shelf: number | null;
+  engineCode: string[];
   model: string[];
   similarProducts: string[];
   crossReferenceOemEquivalents: string[];
@@ -176,6 +180,7 @@ export interface ProductPayload {
   price: number;
   count: number;
   shelf: number | null;
+  engineCode: string[];
   model: string[];
   similarProducts: string[];
   crossReferenceOemEquivalents: string[];
