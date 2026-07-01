@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { CarFormModal } from "@/components/dashboard/CarFormModal";
+import { ClaimCarModal } from "@/components/dashboard/ClaimCarModal";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { DashboardSection } from "@/components/dashboard/nav";
@@ -25,6 +26,7 @@ export default function DashboardPage() {
 
   const [section, setSection] = useState<DashboardSection>("overview");
   const [modalOpen, setModalOpen] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<UserCar | null>(null);
   const [carError, setCarError] = useState<string | null>(null);
   const [deleteCarTarget, setDeleteCarTarget] = useState<UserCar | null>(null);
@@ -175,6 +177,7 @@ export default function DashboardPage() {
               cars={cars}
               error={carError}
               onAdd={openAdd}
+              onClaim={() => setClaimOpen(true)}
               onEdit={openEdit}
               onDelete={deleteCar}
             />
@@ -196,6 +199,12 @@ export default function DashboardPage() {
         editing={editingCar}
         onClose={() => setModalOpen(false)}
         onSaved={refresh}
+      />
+
+      <ClaimCarModal
+        open={claimOpen}
+        onClose={() => setClaimOpen(false)}
+        onClaimed={refresh}
       />
 
       <ConfirmDialog

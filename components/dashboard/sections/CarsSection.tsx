@@ -1,4 +1,4 @@
-import { AlertTriangle, Car, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Car, KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
 
 import type { UserCar } from "@/lib/api/types";
 import { AddToWalletButtons } from "../AddToWalletButtons";
@@ -9,6 +9,7 @@ interface CarsSectionProps {
   cars: UserCar[];
   error: string | null;
   onAdd: () => void;
+  onClaim: () => void;
   onEdit: (car: UserCar) => void;
   onDelete: (car: UserCar) => void;
 }
@@ -17,6 +18,7 @@ export function CarsSection({
   cars,
   error,
   onAdd,
+  onClaim,
   onEdit,
   onDelete
 }: CarsSectionProps) {
@@ -31,13 +33,22 @@ export function CarsSection({
         }
         description="Avtomobillərini idarə et, Wallet-ə əlavə et və ya redaktə et."
         action={
-          <button
-            type="button"
-            onClick={onAdd}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors hover:bg-brand-400"
-          >
-            <Plus className="h-4 w-4" /> Yeni
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClaim}
+              className="inline-flex items-center gap-2 rounded-xl border-hairline bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              <KeyRound className="h-4 w-4" /> DQN ilə sahiblən
+            </button>
+            <button
+              type="button"
+              onClick={onAdd}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors hover:bg-brand-400"
+            >
+              <Plus className="h-4 w-4" /> Yeni
+            </button>
+          </div>
         }
       />
 
@@ -56,13 +67,22 @@ export function CarsSection({
             Profilinə avtomobil əlavə etsən, servis tarixçəsi və yağ izləmə
             avtomatik o avtomobilə bağlanacaq.
           </p>
-          <button
-            type="button"
-            onClick={onAdd}
-            className="mx-auto mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors hover:bg-brand-400"
-          >
-            <Plus className="h-4 w-4" /> Avtomobil əlavə et
-          </button>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={onAdd}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-colors hover:bg-brand-400"
+            >
+              <Plus className="h-4 w-4" /> Avtomobil əlavə et
+            </button>
+            <button
+              type="button"
+              onClick={onClaim}
+              className="inline-flex items-center gap-2 rounded-xl border-hairline bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              <KeyRound className="h-4 w-4" /> DQN ilə sahiblən
+            </button>
+          </div>
         </div>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">

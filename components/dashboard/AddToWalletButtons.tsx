@@ -12,7 +12,10 @@ function applePassUrl(plateNumber: string) {
 
 function googlePassUrl(plateNumber: string) {
   const params = new URLSearchParams({ plateNumber });
-  return `${API_BASE_URL}/api/v1/wallet/google/save?${params.toString()}`;
+  // Backend ships a dedicated landing page (/link) with a card preview and the
+  // official "Save to Google Wallet" button. /save is meant to be reached from
+  // that page, not linked directly.
+  return `${API_BASE_URL}/api/v1/wallet/google/link?${params.toString()}`;
 }
 
 interface AddToWalletButtonsProps {

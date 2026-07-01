@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   CarPayload,
   CarServiceCredentials,
+  ClaimCarPayload,
   CreateMaintenancePayload,
   CustomerPayload,
   CustomerSearchQuery,
@@ -173,6 +174,38 @@ export const carServiceOps = {
         plateNumber: query.plateNumber,
         customerId: query.customerId
       },
+      signal
+    });
+  }
+};
+
+// Plate-first onboarding flow. A service can register a car standalone; the
+// real owner later claims it by plate so the service history follows their
+// account. All three require an authenticated identity and operate against the
+// current user — this is a USER-app flow, distinct from `userCarsApi` (which
+// edits cars already on the account) and `carServiceOps` (operator customers).
+export const carsApi = {
+  register(payload: CarPayload) {
+    return apiRequest<UserCar>("/api/v1/cars", {
+      method: "POST",
+      role: "USER",
+      body: payload
+    });
+  },
+  claim(payload: ClaimCarPayload) {
+    return apiRequest<UserCar>("/api/v1/cars/claim", {
+      method: "POST",
+      role: "USER",
+      body: payload
+    });
+  },
+  // Looks up a claimable car by plate. Resolves with the car when unowned
+  // (200); the backend returns 404 when no such car exists and 409 when it is
+  // already registered to another user — callers should branch on those.
+  searchByPlate(plateNumber: string, signal?: AbortSignal) {
+    return apiRequest<UserCar>("/api/v1/cars/search", {
+      role: "USER",
+      query: { plateNumber },
       signal
     });
   }

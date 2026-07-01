@@ -103,6 +103,14 @@ export interface CarServiceCredentials {
   password: string;
 }
 
+/**
+ * Body for POST /api/v1/cars/claim — the logged-in user attaches an existing
+ * (unowned) car to their own account by plate. Only the plate is required.
+ */
+export interface ClaimCarPayload {
+  plateNumber: string;
+}
+
 export interface CreateMaintenancePayload {
   plateNumber: string;
   serviceItemId: number;
