@@ -99,6 +99,26 @@ export interface CarPayload {
   lastServiceDate: string | null;
 }
 
+/**
+ * Body for POST /api/v1/cars — an operator (CAR_SERVICE / OWNER) registers a car
+ * into the registry standalone. Unlike {@link CarPayload}, it carries the
+ * owner's phone number: the real owner later claims the car by plate, and their
+ * phone must match this value. Plate, phone, brand, model and VIN are required.
+ */
+export interface CarRegistrationPayload {
+  plateNumber: string;
+  ownerPhoneNumber: string;
+  vinCode: string;
+  carBrand: string;
+  brandModel: string;
+  year: number;
+  firstRegisteredKm: number;
+  currentKm: number;
+  oilBrand: string | null;
+  oilType: string | null;
+  lastServiceDate: string | null;
+}
+
 export interface CarServiceCredentials {
   username: string;
   password: string;
@@ -164,6 +184,8 @@ export interface Product {
   status?: string | null;
   category: string | null;
   price: number;
+  /** Price of the non-original (aftermarket) variant, if stocked. */
+  aftermarketPrice: number | null;
   count: number;
   shelf: number | null;
   engineCode: string[];
@@ -178,6 +200,8 @@ export interface ProductPayload {
   brand: string;
   category: string | null;
   price: number;
+  /** Optional non-original (aftermarket) variant price. */
+  aftermarketPrice: number | null;
   count: number;
   shelf: number | null;
   engineCode: string[];

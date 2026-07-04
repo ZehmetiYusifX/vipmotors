@@ -2,6 +2,7 @@ import { apiRequest } from "./client";
 import type {
   AuthResponse,
   CarPayload,
+  CarRegistrationPayload,
   CarServiceCredentials,
   ClaimCarPayload,
   CreateMaintenancePayload,
@@ -151,6 +152,16 @@ export const carServiceOps = {
     return apiRequest<void>(`/api/v1/car-services/customers/${customerId}`, {
       method: "DELETE",
       role: "CAR_SERVICE"
+    });
+  },
+  // Register a car into the registry standalone (no owner account yet). The
+  // owner later claims it by plate via carsApi.claim; their phone must match the
+  // ownerPhoneNumber supplied here. Backend: POST /api/v1/cars (CAR_SERVICE/OWNER).
+  registerCar(payload: CarRegistrationPayload) {
+    return apiRequest<UserCar>("/api/v1/cars", {
+      method: "POST",
+      role: "CAR_SERVICE",
+      body: payload
     });
   },
   createMaintenance(payload: CreateMaintenancePayload) {

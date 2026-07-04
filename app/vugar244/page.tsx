@@ -30,6 +30,7 @@ import { CustomerFormModal } from "@/components/admin/CustomerFormModal";
 import { InventoryPanel } from "@/components/admin/InventoryPanel";
 import { CustomersPanel } from "@/components/admin/CustomersPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
+import { RegisterCarPanel } from "@/components/admin/RegisterCarPanel";
 import { ServicesPanel } from "@/components/admin/ServicesPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { NumberInput } from "@/components/ui/NumberInput";
@@ -48,6 +49,7 @@ import { normalizePlate } from "@/lib/plate";
 
 type AdminSection =
   | "search"
+  | "register-car"
   | "inventory"
   | "oils"
   | "customers"
@@ -70,6 +72,7 @@ const formatDate = formatAzDate;
 
 const BASE_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
   { id: "search", label: "Müştəri axtarışı", Icon: Search },
+  { id: "register-car", label: "Avtomobil əlavə et", Icon: Car },
   { id: "inventory", label: "Anbar", Icon: Package },
   { id: "oils", label: "Kataloq", Icon: Droplet }
 ];
@@ -82,6 +85,7 @@ const OWNER_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }>
 
 const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = {
   search: { eyebrow: "Servis əməliyyatları", title: "Müştəri axtarışı" },
+  "register-car": { eyebrow: "Servis əməliyyatları", title: "Avtomobil əlavə et" },
   inventory: { eyebrow: "Anbar idarəsi", title: "Məhsullar" },
   oils: { eyebrow: "Kataloq idarəsi", title: "Kataloq" },
   customers: { eyebrow: "Owner idarəsi", title: "Müştəri bazası" },
@@ -93,6 +97,7 @@ const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = 
 // for tiny tab targets).
 const NAV_SHORT: Record<AdminSection, string> = {
   search: "Axtarış",
+  "register-car": "Avtomobil",
   inventory: "Anbar",
   oils: "Kataloq",
   customers: "Baza",
@@ -493,6 +498,10 @@ export default function AdminPage() {
         </header>
 
         <div className="flex-1 px-4 sm:px-8 py-8 pb-28 lg:pb-8 space-y-6">
+          {activeSection === "register-car" && (
+            <RegisterCarPanel onUnauthorized={logout} />
+          )}
+
           {activeSection === "inventory" && (
             <InventoryPanel onUnauthorized={logout} isOwner={isOwner} />
           )}

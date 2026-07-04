@@ -8,6 +8,7 @@ import {
   Pencil,
   Trash2,
   X,
+  Percent,
   ShoppingCart,
   AlertTriangle,
   Loader2,
@@ -43,12 +44,16 @@ const COMMON_CATEGORIES = [
   "OTHER"
 ];
 
+// Discount rate applied when the operator toggles the % action on a row.
+const DISCOUNT_RATE = 0.11;
+
 const EMPTY_FORM: ProductPayload = {
   product: "",
   partNumber: "",
   brand: "",
   category: null,
   price: 0,
+  aftermarketPrice: null,
   count: 0,
   shelf: null,
   engineCode: [],
@@ -65,6 +70,7 @@ function toFormState(p: Product | null): ProductPayload {
     brand: p.brand,
     category: p.category,
     price: p.price,
+    aftermarketPrice: p.aftermarketPrice ?? null,
     count: p.count,
     shelf: p.shelf,
     engineCode: p.engineCode ?? [],
@@ -72,6 +78,55 @@ function toFormState(p: Product | null): ProductPayload {
     similarProducts: p.similarProducts ?? [],
     crossReferenceOemEquivalents: p.crossReferenceOemEquivalents ?? []
   };
+}
+
+/**
+ * Renders the standard price and, when stocked, the aftermarket variant price.
+ * With `discounted` the 11%-off value is shown and the original struck through.
+ */
+function PriceView({
+  product,
+  discounted,
+  align = "right"
+}: {
+  product: Product;
+  discounted: boolean;
+  align?: "left" | "right";
+}) {
+  const hasAftermarket = product.aftermarketPrice != null;
+  const line = (value: number, label: string | null) => (
+    <div
+      className={cn(
+        "flex items-center gap-1.5 whitespace-nowrap",
+        align === "right" && "justify-end"
+      )}
+    >
+      {label && (
+        <span className="text-[10px] uppercase tracking-wide text-ink-500">
+          {label}
+        </span>
+      )}
+      {discounted ? (
+        <>
+          <span className="text-xs text-ink-500 line-through">
+            {value.toFixed(2)}
+          </span>
+          <span className="font-semibold text-amber-300">
+            {(value * (1 - DISCOUNT_RATE)).toFixed(2)} ₼
+          </span>
+        </>
+      ) : (
+        <span className="text-white">{value.toFixed(2)} ₼</span>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-0.5">
+      {line(product.price, hasAftermarket ? "Orij." : null)}
+      {hasAftermarket && line(product.aftermarketPrice!, "Q/orij.")}
+    </div>
+  );
 }
 
 function StockBadge({ count }: { count: number }) {
@@ -127,6 +182,18 @@ export function InventoryPanel({
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  // Rows the operator toggled into 11%-discount view via the % action.
+  const [discountedIds, setDiscountedIds] = useState<Set<number>>(new Set());
+
+  function toggleDiscount(id: number) {
+    setDiscountedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function load() {
     setLoading(true);
@@ -195,6 +262,8 @@ export function InventoryPanel({
         brand: found.brand ?? "",
         category: found.category ?? null,
         price: typeof found.price === "number" ? found.price : 0,
+        aftermarketPrice:
+          typeof found.aftermarketPrice === "number" ? found.aftermarketPrice : null,
         count: typeof found.count === "number" ? found.count : 0,
         shelf: found.shelf ?? null,
         engineCode: found.engineCode ?? [],
@@ -231,6 +300,10 @@ export function InventoryPanel({
     const payload: ProductPayload = {
       ...form,
       price: Number(form.price) || 0,
+      aftermarketPrice:
+        form.aftermarketPrice == null || Number.isNaN(Number(form.aftermarketPrice))
+          ? null
+          : Number(form.aftermarketPrice),
       count: Number(form.count) || 0,
       shelf:
         form.shelf == null || Number.isNaN(Number(form.shelf))
@@ -357,6 +430,21 @@ export function InventoryPanel({
 
   const rowActions = (p: Product) => (
     <>
+      <button
+        type="button"
+        onClick={() => toggleDiscount(p.id)}
+        className={cn(
+          "grid h-9 w-9 place-items-center rounded-lg transition-colors",
+          discountedIds.has(p.id)
+            ? "bg-amber-500/15 text-amber-300"
+            : "text-amber-300 hover:bg-amber-500/10"
+        )}
+        aria-label="Endirimli qiyməti göstər"
+        aria-pressed={discountedIds.has(p.id)}
+        title="Endirimli qiyməti göstər"
+      >
+        <Percent className="h-4 w-4" />
+      </button>
       <button
         type="button"
         onClick={() => openSell(p)}
@@ -495,7 +583,9 @@ export function InventoryPanel({
                           <span className="text-ink-500">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right text-white">{p.price.toFixed(2)} ₼</td>
+                      <td className="px-4 py-3 text-right">
+                        <PriceView product={p} discounted={discountedIds.has(p.id)} />
+                      </td>
                       <td className="px-4 py-3 text-right text-ink-300">
                         {p.shelf ?? "—"}
                       </td>
@@ -540,10 +630,11 @@ export function InventoryPanel({
 
                   <div className="mt-3 flex items-center justify-between gap-3 pt-3 border-t border-white/5">
                     <div className="flex items-center gap-4 text-xs">
-                      <span>
-                        <span className="text-ink-500">Qiymət </span>
-                        <span className="text-white font-medium">{p.price.toFixed(2)} ₼</span>
-                      </span>
+                      <PriceView
+                        product={p}
+                        discounted={discountedIds.has(p.id)}
+                        align="left"
+                      />
                       <span>
                         <span className="text-ink-500">Rəf </span>
                         <span className="text-ink-200">{p.shelf ?? "—"}</span>
@@ -676,6 +767,16 @@ export function InventoryPanel({
                   className={fieldClass}
                   value={form.price}
                   onValueChange={(v) => setForm((f) => ({ ...f, price: v ?? 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Qeyri-orijinal qiymət (₼, ixtiyari)</label>
+                <NumberInput
+                  decimal
+                  className={fieldClass}
+                  value={form.aftermarketPrice}
+                  onValueChange={(v) => setForm((f) => ({ ...f, aftermarketPrice: v }))}
                   placeholder="0"
                 />
               </div>
