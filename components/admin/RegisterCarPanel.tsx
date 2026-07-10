@@ -78,8 +78,8 @@ export function RegisterCarPanel({ onUnauthorized }: RegisterCarPanelProps) {
     const carBrand = form.carBrand.trim();
     const brandModel = form.brandModel.trim();
 
-    if (!plateNumber || !carBrand || !brandModel || !vinCode) {
-      setError("DQN, marka, model və VIN kod tələb olunur.");
+    if (!plateNumber || !carBrand || !brandModel) {
+      setError("DQN, marka və model tələb olunur.");
       return;
     }
     if (localPhone.length < 9) {
@@ -193,9 +193,8 @@ export function RegisterCarPanel({ onUnauthorized }: RegisterCarPanelProps) {
           </div>
 
           <div>
-            <label className={labelClass}>VIN kod</label>
+            <label className={labelClass}>VIN kod (ixtiyari)</label>
             <input
-              required
               className={cn(fieldClass, "font-mono")}
               value={form.vinCode}
               onChange={(e) => update("vinCode", e.target.value.toUpperCase())}

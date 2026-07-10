@@ -11,6 +11,8 @@ interface RequestOptions {
   query?: Record<string, string | number | undefined>;
   signal?: AbortSignal;
   formData?: FormData;
+  /** Extra request headers (e.g. X-Scan-Secret for wallet scans). */
+  headers?: Record<string, string>;
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
@@ -30,10 +32,19 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { method = "GET", body, role, query, signal, formData } = options;
+  const {
+    method = "GET",
+    body,
+    role,
+    query,
+    signal,
+    formData,
+    headers: extraHeaders
+  } = options;
 
   const headers: Record<string, string> = {
-    Accept: "application/json"
+    Accept: "application/json",
+    ...extraHeaders
   };
 
   if (body !== undefined && !formData) {

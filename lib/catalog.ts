@@ -60,10 +60,11 @@ export function mapProduct(p: Product): CatalogItem {
     badge: p.partNumber || null,
     spec: p.model?.length ? p.model.join(", ") : null,
     description: null,
-    price: p.price ?? null,
-    image: null,
-    inStock: (p.count ?? 0) > 0,
-    count: p.count ?? 0
+    // Admin-hidden prices never reach the storefront card or the WhatsApp text.
+    price: p.hidePrice ? null : (p.price ?? null),
+    image: resolveImageUrl(p.images?.[0] ?? null),
+    inStock: (p.count ?? 0) + (p.aftermarketCount ?? 0) > 0,
+    count: (p.count ?? 0) + (p.aftermarketCount ?? 0)
   };
 }
 

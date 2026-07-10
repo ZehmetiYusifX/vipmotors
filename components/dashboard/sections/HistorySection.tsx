@@ -118,6 +118,12 @@ export function HistorySection({ primaryCar }: HistorySectionProps) {
                         Növbəti: {formatKm(rec.nextServiceKm)}
                       </span>
                     )}
+                    {rec.nextServiceDate && (
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Növbəti dəyişmə: {formatDate(rec.nextServiceDate)}
+                      </span>
+                    )}
                   </div>
 
                   {filters.length > 0 && (

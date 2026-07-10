@@ -63,6 +63,8 @@ export interface MaintenanceRecord {
   airFilterChanged: boolean;
   cabinFilterChanged: boolean;
   serviceDate: string;
+  /** Planned date of the next service/oil change, if the operator set one. */
+  nextServiceDate: string | null;
 }
 
 export interface RegisterUserPayload {
@@ -103,7 +105,8 @@ export interface CarPayload {
  * Body for POST /api/v1/cars — an operator (CAR_SERVICE / OWNER) registers a car
  * into the registry standalone. Unlike {@link CarPayload}, it carries the
  * owner's phone number: the real owner later claims the car by plate, and their
- * phone must match this value. Plate, phone, brand, model and VIN are required.
+ * phone must match this value. Plate, phone, brand and model are required; VIN
+ * is optional.
  */
 export interface CarRegistrationPayload {
   plateNumber: string;
@@ -132,6 +135,27 @@ export interface ClaimCarPayload {
   plateNumber: string;
 }
 
+/**
+ * A car an operator registered into the registry that no user has claimed yet
+ * (anonymous owner). Listed in the customer base; `ownerPhoneNumber` is the
+ * phone the future owner must match to claim it.
+ */
+export interface UnclaimedCar {
+  id: number;
+  plateNumber: string;
+  ownerPhoneNumber: string | null;
+  vinCode: string | null;
+  carBrand: string | null;
+  brandModel: string | null;
+  year: number | null;
+  firstRegisteredKm: number | null;
+  currentKm: number | null;
+  oilBrand: string | null;
+  oilType: string | null;
+  lastServiceDate: string | null;
+  creationTime: string | null;
+}
+
 export interface CreateMaintenancePayload {
   plateNumber: string;
   serviceItemId: number;
@@ -146,7 +170,15 @@ export interface CreateMaintenancePayload {
   airFilterChanged?: boolean;
   cabinFilterChanged?: boolean;
   serviceDate: string;
+  /** Planned date of the next service/oil change — optional. */
+  nextServiceDate?: string | null;
 }
+
+/**
+ * Body for PUT /api/v1/car-services/maintenances/{id} — same data as create but
+ * without the plate number: the record stays bound to its car.
+ */
+export type UpdateMaintenancePayload = Omit<CreateMaintenancePayload, "plateNumber">;
 
 export interface MaintenanceHistoryQuery {
   plateNumber?: string;
@@ -186,8 +218,14 @@ export interface Product {
   price: number;
   /** Price of the non-original (aftermarket) variant, if stocked. */
   aftermarketPrice: number | null;
+  /** When true the price is internal-only and hidden from customers on the storefront. */
+  hidePrice: boolean;
   count: number;
+  /** Stock count of the non-original (aftermarket) variant, if stocked. */
+  aftermarketCount: number | null;
   shelf: number | null;
+  /** Public image paths (under /uploads/products/) — prefix with API_BASE_URL to display. */
+  images: string[];
   engineCode: string[];
   model: string[];
   similarProducts: string[];
@@ -202,7 +240,11 @@ export interface ProductPayload {
   price: number;
   /** Optional non-original (aftermarket) variant price. */
   aftermarketPrice: number | null;
+  /** Hide the price from customers on the storefront. */
+  hidePrice: boolean;
   count: number;
+  /** Optional non-original (aftermarket) variant stock count. */
+  aftermarketCount: number | null;
   shelf: number | null;
   engineCode: string[];
   model: string[];
@@ -280,6 +322,34 @@ export interface MotorOilSearchQuery {
   oilType?: string;
   standardApproval?: string;
   specification?: string;
+}
+
+/**
+ * Body for POST /api/v1/wallet/scan — identifies the pass by plate and
+ * optionally carries fresh service data. Even with no service fields the call
+ * still pushes a live refresh to the customer's wallet card.
+ */
+export interface WalletScanPayload {
+  plateNumber: string;
+  currentKm?: number;
+  nextServiceKm?: number;
+  oilBrand?: string;
+  oilType?: string;
+  lastServiceDate?: string;
+}
+
+/** Outcome of a scan-triggered wallet update. */
+export interface WalletScanResult {
+  plateNumber: string;
+  serialNumber: string;
+  /** Apple Wallet devices registered for this pass with the PassKit web service. */
+  appleDevicesRegistered: number;
+  /** How many of the registered devices were successfully notified via APNs. */
+  applePushesSent: number;
+  /** Whether the Google Wallet object was patched successfully. */
+  googleUpdated: boolean;
+  /** Whether stored service data was modified by this scan. */
+  dataChanged: boolean;
 }
 
 export class ApiError extends Error {

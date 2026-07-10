@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Package,
   Plus,
@@ -14,9 +14,13 @@ import {
   Loader2,
   Sparkles,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  ImagePlus,
+  ImageIcon,
+  EyeOff
 } from "lucide-react";
 
+import { resolveImageUrl } from "@/lib/media";
 import { productsApi } from "@/lib/api/endpoints";
 import { ApiError, type Product, type ProductPayload } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
@@ -54,7 +58,9 @@ const EMPTY_FORM: ProductPayload = {
   category: null,
   price: 0,
   aftermarketPrice: null,
+  hidePrice: false,
   count: 0,
+  aftermarketCount: null,
   shelf: null,
   engineCode: [],
   model: [],
@@ -71,13 +77,20 @@ function toFormState(p: Product | null): ProductPayload {
     category: p.category,
     price: p.price,
     aftermarketPrice: p.aftermarketPrice ?? null,
+    hidePrice: p.hidePrice ?? false,
     count: p.count,
+    aftermarketCount: p.aftermarketCount ?? null,
     shelf: p.shelf,
     engineCode: p.engineCode ?? [],
     model: p.model ?? [],
     similarProducts: p.similarProducts ?? [],
     crossReferenceOemEquivalents: p.crossReferenceOemEquivalents ?? []
   };
+}
+
+/** Turns a stored /uploads/products/... path into an absolute URL. */
+function imageUrl(path: string) {
+  return resolveImageUrl(path) ?? path;
 }
 
 /**
@@ -125,15 +138,26 @@ function PriceView({
     <div className="space-y-0.5">
       {line(product.price, hasAftermarket ? "Orij." : null)}
       {hasAftermarket && line(product.aftermarketPrice!, "Q/orij.")}
+      {product.hidePrice && (
+        <div
+          className={cn(
+            "flex items-center gap-1 text-[10px] text-amber-300/80",
+            align === "right" && "justify-end"
+          )}
+          title="Qiymət müştəriyə göstərilmir"
+        >
+          <EyeOff className="h-3 w-3" /> Gizli
+        </div>
+      )}
     </div>
   );
 }
 
-function StockBadge({ count }: { count: number }) {
+function StockBadge({ count, label }: { count: number; label?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
         count > 5
           ? "bg-emerald-500/15 text-emerald-300"
           : count > 0
@@ -141,8 +165,64 @@ function StockBadge({ count }: { count: number }) {
             : "bg-red-500/15 text-red-300"
       )}
     >
+      {label && (
+        <span className="text-[9px] uppercase tracking-wide opacity-70">
+          {label}
+        </span>
+      )}
       {count}
     </span>
+  );
+}
+
+/** Original stock badge plus, when stocked, the aftermarket variant badge. */
+function StockView({ product, align = "right" }: { product: Product; align?: "left" | "right" }) {
+  const hasAftermarket = product.aftermarketCount != null;
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        align === "right" ? "items-end" : "items-start"
+      )}
+    >
+      <StockBadge count={product.count} label={hasAftermarket ? "Orij." : undefined} />
+      {hasAftermarket && (
+        <StockBadge count={product.aftermarketCount!} label="Q/orij." />
+      )}
+    </div>
+  );
+}
+
+/** Small clickable thumbnail of the first product photo, with a +N counter. */
+function ProductThumb({ product }: { product: Product }) {
+  const images = product.images ?? [];
+  if (images.length === 0) {
+    return (
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border-hairline bg-ink-900/60 text-ink-500">
+        <ImageIcon className="h-4 w-4" />
+      </div>
+    );
+  }
+  return (
+    <a
+      href={imageUrl(images[0])}
+      target="_blank"
+      rel="noreferrer"
+      className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-lg border-hairline"
+      title="Şəkli aç"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl(images[0])}
+        alt={product.product}
+        className="h-full w-full object-cover"
+      />
+      {images.length > 1 && (
+        <span className="absolute bottom-0 right-0 rounded-tl bg-ink-950/80 px-1 text-[9px] font-semibold text-white">
+          +{images.length - 1}
+        </span>
+      )}
+    </a>
   );
 }
 
@@ -167,6 +247,13 @@ export function InventoryPanel({
   const [crossRefInput, setCrossRefInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Photos already stored on the product being edited, and new files picked
+  // in the modal (uploaded after create/update succeeds).
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [removingImage, setRemovingImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [sellOpenFor, setSellOpenFor] = useState<Product | null>(null);
   const [sellCount, setSellCount] = useState("1");
@@ -223,6 +310,8 @@ export function InventoryPanel({
     setModelInput("");
     setSimilarInput("");
     setCrossRefInput("");
+    setExistingImages([]);
+    setNewImages([]);
     setSaveError(null);
     setLookupMsg(null);
     setModalOpen(true);
@@ -235,6 +324,8 @@ export function InventoryPanel({
     setModelInput((p.model ?? []).join(", "));
     setSimilarInput((p.similarProducts ?? []).join(", "));
     setCrossRefInput((p.crossReferenceOemEquivalents ?? []).join(", "));
+    setExistingImages(p.images ?? []);
+    setNewImages([]);
     setSaveError(null);
     setLookupMsg(null);
     setModalOpen(true);
@@ -264,7 +355,10 @@ export function InventoryPanel({
         price: typeof found.price === "number" ? found.price : 0,
         aftermarketPrice:
           typeof found.aftermarketPrice === "number" ? found.aftermarketPrice : null,
+        hidePrice: found.hidePrice ?? false,
         count: typeof found.count === "number" ? found.count : 0,
+        aftermarketCount:
+          typeof found.aftermarketCount === "number" ? found.aftermarketCount : null,
         shelf: found.shelf ?? null,
         engineCode: found.engineCode ?? [],
         model: found.model ?? [],
@@ -305,6 +399,10 @@ export function InventoryPanel({
           ? null
           : Number(form.aftermarketPrice),
       count: Number(form.count) || 0,
+      aftermarketCount:
+        form.aftermarketCount == null || Number.isNaN(Number(form.aftermarketCount))
+          ? null
+          : Number(form.aftermarketCount),
       shelf:
         form.shelf == null || Number.isNaN(Number(form.shelf))
           ? null
@@ -329,10 +427,21 @@ export function InventoryPanel({
     };
     setSaving(true);
     try {
-      if (editing) {
-        await productsApi.update(editing.id, payload);
-      } else {
-        await productsApi.create(payload);
+      const saved = editing
+        ? await productsApi.update(editing.id, payload)
+        : await productsApi.create(payload);
+      if (newImages.length > 0) {
+        try {
+          await productsApi.uploadImages(saved.id, newImages);
+        } catch (imgErr) {
+          setToast({
+            kind: "error",
+            text:
+              imgErr instanceof ApiError
+                ? `Məhsul yadda saxlanıldı, amma şəkillər yüklənmədi: ${imgErr.message}`
+                : "Məhsul yadda saxlanıldı, amma şəkillər yüklənmədi."
+          });
+        }
       }
       closeModal();
       await load();
@@ -344,6 +453,35 @@ export function InventoryPanel({
       setSaveError(err instanceof ApiError ? err.message : "Yadda saxlamaq mümkün olmadı.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function onPickImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter((f) =>
+      f.type.startsWith("image/")
+    );
+    if (files.length > 0) {
+      setNewImages((prev) => [...prev, ...files]);
+    }
+    // Reset so the same file can be re-picked after removal.
+    e.target.value = "";
+  }
+
+  async function removeExistingImage(path: string) {
+    if (!editing) return;
+    setRemovingImage(path);
+    try {
+      const updated = await productsApi.removeImage(editing.id, path);
+      setExistingImages(updated.images ?? []);
+      setItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      setSaveError(err instanceof ApiError ? err.message : "Şəkli silmək mümkün olmadı.");
+    } finally {
+      setRemovingImage(null);
     }
   }
 
@@ -420,10 +558,16 @@ export function InventoryPanel({
   const filtered = query.trim()
     ? items.filter((p) => {
         const q = query.trim().toLowerCase();
+        // Similar-product and OEM cross-reference part numbers also match, so
+        // typing an equivalent code still surfaces the stocked product.
         return (
           p.partNumber.toLowerCase().includes(q) ||
           p.product.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q)
+          p.brand.toLowerCase().includes(q) ||
+          (p.similarProducts ?? []).some((code) => code.toLowerCase().includes(q)) ||
+          (p.crossReferenceOemEquivalents ?? []).some((code) =>
+            code.toLowerCase().includes(q)
+          )
         );
       })
     : items;
@@ -571,7 +715,12 @@ export function InventoryPanel({
                 <tbody className="divide-y divide-white/5">
                   {filtered.map((p) => (
                     <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-4 py-3 text-white font-medium">{p.product}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <ProductThumb product={p} />
+                          <span className="text-white font-medium">{p.product}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 font-mono text-ink-200">{p.partNumber}</td>
                       <td className="px-4 py-3 text-ink-300">{p.brand}</td>
                       <td className="px-4 py-3">
@@ -590,7 +739,7 @@ export function InventoryPanel({
                         {p.shelf ?? "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <StockBadge count={p.count} />
+                        <StockView product={p} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
@@ -608,15 +757,18 @@ export function InventoryPanel({
               {filtered.map((p) => (
                 <li key={p.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-white font-medium text-sm leading-snug">
-                        {p.product}
-                      </div>
-                      <div className="mt-1 font-mono text-xs text-ink-300">
-                        {p.partNumber}
+                    <div className="flex min-w-0 items-start gap-3">
+                      <ProductThumb product={p} />
+                      <div className="min-w-0">
+                        <div className="text-white font-medium text-sm leading-snug">
+                          {p.product}
+                        </div>
+                        <div className="mt-1 font-mono text-xs text-ink-300">
+                          {p.partNumber}
+                        </div>
                       </div>
                     </div>
-                    <StockBadge count={p.count} />
+                    <StockView product={p} />
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
@@ -780,13 +932,49 @@ export function InventoryPanel({
                   placeholder="0"
                 />
               </div>
+              <div className="sm:col-span-2">
+                <label
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-xl border-hairline px-3 py-2.5 text-sm cursor-pointer select-none transition-colors",
+                    form.hidePrice
+                      ? "border-amber-500/40 bg-amber-500/10 text-white"
+                      : "bg-ink-900/60 text-ink-300 hover:bg-ink-900"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.hidePrice}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, hidePrice: e.target.checked }))
+                    }
+                    className="h-4 w-4 rounded border-white/20 bg-ink-900 accent-brand-500"
+                  />
+                  <EyeOff className="h-4 w-4 text-amber-300" />
+                  <span>
+                    Qiyməti müştəriyə göstərmə
+                    <span className="block text-xs text-ink-500">
+                      Seçilsə, məhsulun qiyməti landing və mağaza səhifəsində
+                      görünməyəcək.
+                    </span>
+                  </span>
+                </label>
+              </div>
               <div>
-                <label className={labelClass}>Stok sayı</label>
+                <label className={labelClass}>Orijinal say</label>
                 <NumberInput
                   required
                   className={fieldClass}
                   value={form.count}
                   onValueChange={(v) => setForm((f) => ({ ...f, count: v ?? 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Qeyri-orijinal say (ixtiyari)</label>
+                <NumberInput
+                  className={fieldClass}
+                  value={form.aftermarketCount}
+                  onValueChange={(v) => setForm((f) => ({ ...f, aftermarketCount: v }))}
                   placeholder="0"
                 />
               </div>
@@ -834,6 +1022,84 @@ export function InventoryPanel({
                   onChange={(e) => setCrossRefInput(e.target.value)}
                   placeholder="90915-YZZF1, 04152-YZZA1"
                 />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Şəkillər</label>
+                <div className="flex flex-wrap gap-3">
+                  {existingImages.map((path) => (
+                    <div
+                      key={path}
+                      className="relative h-20 w-20 overflow-hidden rounded-xl border-hairline"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imageUrl(path)}
+                        alt="Məhsul şəkli"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(path)}
+                        disabled={removingImage === path}
+                        className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-ink-950/80 text-red-300 hover:bg-red-500/20 disabled:opacity-60"
+                        aria-label="Şəkli sil"
+                        title="Şəkli sil"
+                      >
+                        {removingImage === path ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <X className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                  {newImages.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="relative h-20 w-20 overflow-hidden rounded-xl border border-dashed border-brand-500/40"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewImages((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-ink-950/80 text-red-300 hover:bg-red-500/20"
+                        aria-label="Seçilmiş şəkli çıxar"
+                        title="Seçilmiş şəkli çıxar"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="grid h-20 w-20 place-items-center rounded-xl border border-dashed border-white/15 text-ink-400 hover:border-brand-500/50 hover:text-brand-300 transition-colors"
+                    aria-label="Şəkil əlavə et"
+                    title="Şəkil əlavə et"
+                  >
+                    <ImagePlus className="h-6 w-6" />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={onPickImages}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-ink-500">
+                  Yeni seçilən şəkillər &quot;
+                  {editing ? "Yadda saxla" : "Əlavə et"}&quot; basılanda yüklənəcək.
+                </p>
               </div>
 
               {saveError && (

@@ -12,6 +12,7 @@ import {
   Search,
   Trash2,
   UserPlus,
+  UserRound,
   Users
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ import { carServiceOps } from "@/lib/api/endpoints";
 import {
   ApiError,
   type CustomerSearchQuery,
+  type UnclaimedCar,
   type UserProfile
 } from "@/lib/api/types";
 import { CustomerFormModal } from "@/components/admin/CustomerFormModal";
@@ -79,6 +81,8 @@ export function CustomersPanel({
 }) {
   const [query, setQuery] = useState("");
   const [customers, setCustomers] = useState<UserProfile[]>([]);
+  // Admin-registered cars still waiting for their owner to claim them.
+  const [unclaimed, setUnclaimed] = useState<UnclaimedCar[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,8 +98,13 @@ export function CustomersPanel({
     setLoading(true);
     setError(null);
     try {
-      const res = await carServiceOps.searchCustomers(params, signal);
+      const [res, unclaimedRes] = await Promise.all([
+        carServiceOps.searchCustomers(params, signal),
+        // Supplementary — a failure here must not hide the customer base.
+        carServiceOps.unclaimedCars(params.search, signal).catch(() => [])
+      ]);
       setCustomers(normalizeList(res));
+      setUnclaimed(Array.isArray(unclaimedRes) ? unclaimedRes : []);
     } catch (err) {
       if (signal?.aborted) return;
       if (err instanceof ApiError && err.status === 401) {
@@ -103,6 +112,7 @@ export function CustomersPanel({
         return;
       }
       setCustomers([]);
+      setUnclaimed([]);
       setError(
         err instanceof ApiError ? err.message : "Müştəri bazası yüklənmədi."
       );
@@ -174,6 +184,14 @@ export function CustomersPanel({
                 {customers.length}
               </span>
             )}
+            {!loading && unclaimed.length > 0 && (
+              <span
+                className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-sm font-medium text-amber-200"
+                title="Sahibsiz avtomobillər (claim gözləyir)"
+              >
+                {unclaimed.length} sahibsiz
+              </span>
+            )}
           </h2>
           <p className="mt-1 text-sm text-ink-400">
             Bütün müştəriləri ad, telefon və ya nömrə ilə axtar, yarat, redaktə
@@ -227,7 +245,7 @@ export function CustomersPanel({
         <div className="p-10 grid place-items-center text-ink-400 rounded-2xl border-hairline bg-ink-900/40">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
-      ) : customers.length === 0 ? (
+      ) : customers.length === 0 && unclaimed.length === 0 ? (
         <div className="rounded-2xl border-hairline bg-ink-900/40 p-10 text-center text-ink-400">
           {query.trim()
             ? "Axtarışa uyğun müştəri tapılmadı."
@@ -309,6 +327,53 @@ export function CustomersPanel({
                   <Trash2 className="h-4 w-4" />
                 </button>
                 <ChevronRight className="h-4 w-4 text-ink-600 ml-1 hidden sm:block" />
+              </div>
+            </li>
+          ))}
+          {unclaimed.map((car) => (
+            <li
+              key={`unclaimed-${car.id}`}
+              className="flex items-start gap-3 rounded-xl border border-dashed border-amber-500/20 bg-ink-900/30 p-3 hover:bg-ink-900/60 hover:border-amber-500/40 transition-all"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-amber-500/10 text-amber-300 shrink-0">
+                <UserRound className="h-4.5 w-4.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-ink-300 truncate">
+                    Anonim sahib
+                  </span>
+                  <span className="shrink-0 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-200">
+                    Sahibsiz · claim gözləyir
+                  </span>
+                </div>
+                {car.ownerPhoneNumber && (
+                  <a
+                    href={`tel:${car.ownerPhoneNumber}`}
+                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-400 hover:text-amber-300"
+                  >
+                    <Phone className="h-3 w-3" />
+                    {car.ownerPhoneNumber}
+                  </a>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border-hairline bg-ink-950/60 px-2 py-1 text-[11px]">
+                    <Car className="h-3 w-3 text-amber-300 shrink-0" />
+                    <span className="font-mono font-semibold tracking-wider text-white">
+                      {car.plateNumber}
+                    </span>
+                    {(car.carBrand || car.brandModel) && (
+                      <span className="text-ink-400 truncate max-w-37.5">
+                        {[car.carBrand, car.brandModel].filter(Boolean).join(" ")}
+                      </span>
+                    )}
+                  </span>
+                  {car.vinCode && (
+                    <span className="inline-flex items-center rounded-lg border-hairline bg-ink-950/60 px-2 py-1 font-mono text-[11px] text-ink-400">
+                      {car.vinCode}
+                    </span>
+                  )}
+                </div>
               </div>
             </li>
           ))}

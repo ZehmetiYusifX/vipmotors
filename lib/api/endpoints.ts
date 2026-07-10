@@ -24,8 +24,12 @@ import type {
   SellPayload,
   ServiceItem,
   ServiceItemPayload,
+  UnclaimedCar,
+  UpdateMaintenancePayload,
   UserCar,
-  UserProfile
+  UserProfile,
+  WalletScanPayload,
+  WalletScanResult
 } from "./types";
 
 export const userAuth = {
@@ -164,11 +168,30 @@ export const carServiceOps = {
       body: payload
     });
   },
+  // Admin-registered cars nobody has claimed yet (anonymous owners). Optional
+  // search matches plate, owner phone, VIN, brand and model.
+  unclaimedCars(search?: string, signal?: AbortSignal) {
+    return apiRequest<UnclaimedCar[]>("/api/v1/cars/unclaimed", {
+      role: "CAR_SERVICE",
+      query: { search },
+      signal
+    });
+  },
   createMaintenance(payload: CreateMaintenancePayload) {
     return apiRequest<MaintenanceRecord>(
       "/api/v1/car-services/maintenances",
       {
         method: "POST",
+        role: "CAR_SERVICE",
+        body: payload
+      }
+    );
+  },
+  updateMaintenance(maintenanceId: number, payload: UpdateMaintenancePayload) {
+    return apiRequest<MaintenanceRecord>(
+      `/api/v1/car-services/maintenances/${maintenanceId}`,
+      {
+        method: "PUT",
         role: "CAR_SERVICE",
         body: payload
       }
@@ -273,6 +296,24 @@ export const productsApi = {
       `/api/v1/products/lookup/${encodeURIComponent(partNumber)}`
     );
   },
+  uploadImages(id: number, images: File[]) {
+    const fd = new FormData();
+    for (const image of images) {
+      fd.append("images", image);
+    }
+    return apiRequest<Product>(`/api/v1/products/${id}/images`, {
+      method: "POST",
+      role: "CAR_SERVICE",
+      formData: fd
+    });
+  },
+  removeImage(id: number, path: string) {
+    return apiRequest<Product>(`/api/v1/products/${id}/images`, {
+      method: "DELETE",
+      role: "CAR_SERVICE",
+      query: { path }
+    });
+  },
   search(partNumber: string, signal?: AbortSignal) {
     return apiRequest<Product>("/api/v1/products/search", {
       query: { partNumber },
@@ -370,6 +411,21 @@ export const motorOilsApi = {
     return apiRequest<MotorOil[]>("/api/v1/motor-oils/search", {
       query: q,
       signal
+    });
+  }
+};
+
+export const walletApi = {
+  /**
+   * Triggers the automatic wallet update: persists any supplied service data,
+   * then live-refreshes the pass on Apple Wallet (APNs) and Google Wallet.
+   * `scanSecret` is only needed when the backend has WALLET_SCAN_SECRET set.
+   */
+  scan(payload: WalletScanPayload, scanSecret?: string) {
+    return apiRequest<WalletScanResult>("/api/v1/wallet/scan", {
+      method: "POST",
+      body: payload,
+      headers: scanSecret ? { "X-Scan-Secret": scanSecret } : undefined
     });
   }
 };

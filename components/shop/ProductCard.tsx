@@ -60,9 +60,13 @@ export function ProductCard({ item }: { item: CatalogItem }) {
         )}
 
         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-          <div className="text-xl font-semibold text-white">
-            {formatPrice(item.price)} <span className="text-sm text-ink-400">₼</span>
-          </div>
+          {item.price !== null ? (
+            <div className="text-xl font-semibold text-white">
+              {formatPrice(item.price)} <span className="text-sm text-ink-400">₼</span>
+            </div>
+          ) : (
+            <div className="text-sm font-medium text-ink-400">Qiymət üçün əlaqə</div>
+          )}
           <a
             href={whatsappLink(item)}
             target="_blank"

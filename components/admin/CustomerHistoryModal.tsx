@@ -145,6 +145,15 @@ export function CustomerHistoryModal({
                         <Gauge className="h-3 w-3 text-ink-500" />
                         <dd className="text-white">{formatKm(rec.serviceKm)}</dd>
                       </div>
+                      {rec.nextServiceDate && (
+                        <div className="inline-flex items-center gap-1.5">
+                          <Calendar className="h-3 w-3 text-ink-500" />
+                          <dt className="text-ink-500">Növbəti:</dt>
+                          <dd className="text-white">
+                            {formatDate(rec.nextServiceDate)}
+                          </dd>
+                        </div>
+                      )}
                       {rec.serviceItemType === "OIL_CHANGE" &&
                         (rec.oilBrand || rec.oilType) && (
                           <div className="inline-flex items-center gap-1.5">

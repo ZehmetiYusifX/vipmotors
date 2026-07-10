@@ -21,7 +21,9 @@ import {
   ShieldCheck,
   Trash2,
   UserPlus,
+  UserRound,
   Users,
+  Wallet,
   Wrench
 } from "lucide-react";
 
@@ -32,14 +34,21 @@ import { CustomersPanel } from "@/components/admin/CustomersPanel";
 import { OilCatalogPanel } from "@/components/admin/OilCatalogPanel";
 import { RegisterCarPanel } from "@/components/admin/RegisterCarPanel";
 import { ServicesPanel } from "@/components/admin/ServicesPanel";
+import { WalletScanPanel } from "@/components/admin/WalletScanPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Select } from "@/components/ui/Select";
-import { carServiceAuth, carServiceOps, servicesApi } from "@/lib/api/endpoints";
+import {
+  carServiceAuth,
+  carServiceOps,
+  servicesApi,
+  walletApi
+} from "@/lib/api/endpoints";
 import {
   ApiError,
   type MaintenanceRecord,
   type ServiceItem,
+  type UnclaimedCar,
   type UserProfile
 } from "@/lib/api/types";
 import { useServiceAuth } from "@/lib/auth/ServiceAuthProvider";
@@ -52,6 +61,7 @@ type AdminSection =
   | "register-car"
   | "inventory"
   | "oils"
+  | "wallet-scan"
   | "customers"
   | "services"
   | "register-service";
@@ -60,6 +70,8 @@ type SearchState =
   | { status: "idle" }
   | { status: "loading"; plate: string }
   | { status: "found"; customer: UserProfile }
+  // Admin-registered car nobody has claimed yet — services can still be logged on it.
+  | { status: "found_unclaimed"; car: UnclaimedCar }
   | { status: "not_found"; plate: string }
   | { status: "error"; message: string };
 
@@ -74,7 +86,8 @@ const BASE_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> 
   { id: "search", label: "Müştəri axtarışı", Icon: Search },
   { id: "register-car", label: "Avtomobil əlavə et", Icon: Car },
   { id: "inventory", label: "Anbar", Icon: Package },
-  { id: "oils", label: "Kataloq", Icon: Droplet }
+  { id: "oils", label: "Kataloq", Icon: Droplet },
+  { id: "wallet-scan", label: "Wallet skan", Icon: Wallet }
 ];
 
 const OWNER_NAV: Array<{ id: AdminSection; label: string; Icon: typeof Search }> = [
@@ -88,6 +101,7 @@ const SECTION_TITLE: Record<AdminSection, { eyebrow: string; title: string }> = 
   "register-car": { eyebrow: "Servis əməliyyatları", title: "Avtomobil əlavə et" },
   inventory: { eyebrow: "Anbar idarəsi", title: "Məhsullar" },
   oils: { eyebrow: "Kataloq idarəsi", title: "Kataloq" },
+  "wallet-scan": { eyebrow: "Servis əməliyyatları", title: "Wallet skan" },
   customers: { eyebrow: "Owner idarəsi", title: "Müştəri bazası" },
   services: { eyebrow: "Owner idarəsi", title: "Xidmət növləri" },
   "register-service": { eyebrow: "Owner idarəsi", title: "Yeni Servis Qeydiyyatı" }
@@ -100,6 +114,7 @@ const NAV_SHORT: Record<AdminSection, string> = {
   "register-car": "Avtomobil",
   inventory: "Anbar",
   oils: "Kataloq",
+  "wallet-scan": "Wallet",
   customers: "Baza",
   services: "Xidmət",
   "register-service": "Servis"
@@ -128,12 +143,31 @@ export default function AdminPage() {
   const [serviceDate, setServiceDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
+  // Planned date of the next service/oil change — optional, empty means unset.
+  const [nextServiceDate, setNextServiceDate] = useState("");
+  // Outcome of the automatic wallet refresh fired after a maintenance record is
+  // created; null while nothing was attempted, "pending" while in flight.
+  const [walletPush, setWalletPush] = useState<
+    | null
+    | { status: "pending" }
+    | {
+        status: "ok";
+        appleDevicesRegistered: number;
+        applePushesSent: number;
+        googleUpdated: boolean;
+      }
+    | { status: "error" }
+  >(null);
   // Which of the customer's cars the new service record is for. Defaults to the
   // primary plate; a selector appears when the customer has more than one car.
   const [serviceCarPlate, setServiceCarPlate] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [lastCreated, setLastCreated] = useState<MaintenanceRecord | null>(null);
+  // Whether the success banner refers to a freshly created or an edited record.
+  const [lastSavedMode, setLastSavedMode] = useState<"created" | "updated">("created");
+  // History record being edited in the maintenance form; null = create mode.
+  const [editingRecord, setEditingRecord] = useState<MaintenanceRecord | null>(null);
 
   const [history, setHistory] = useState<MaintenanceRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -206,13 +240,39 @@ export default function AdminPage() {
     setNextServiceKm(
       customer.nextServiceKm != null ? String(customer.nextServiceKm) : ""
     );
+    setNextServiceDate("");
     setOilFilterChanged(false);
     setFuelFilterChanged(false);
     setAirFilterChanged(false);
     setCabinFilterChanged(false);
     setLastCreated(null);
     setCreateError(null);
-    void loadHistory(customer);
+    setWalletPush(null);
+    setEditingRecord(null);
+    void loadHistory(customer.plateNumber);
+  }
+
+  // Same as applyCustomer but for an admin-registered car nobody has claimed yet:
+  // prime the maintenance form from the car's own data (anonymous owner).
+  function applyUnclaimedCar(car: UnclaimedCar) {
+    setSearch({ status: "found_unclaimed", car });
+    setPlate(car.plateNumber);
+    setServiceCarPlate(car.plateNumber);
+    setOilBrand(car.oilBrand || "");
+    setOilType(car.oilType || "");
+    setOilLiters("");
+    setServiceKm(String(car.currentKm || ""));
+    setNextServiceKm("");
+    setNextServiceDate("");
+    setOilFilterChanged(false);
+    setFuelFilterChanged(false);
+    setAirFilterChanged(false);
+    setCabinFilterChanged(false);
+    setLastCreated(null);
+    setCreateError(null);
+    setWalletPush(null);
+    setEditingRecord(null);
+    void loadHistory(car.plateNumber);
   }
 
   // Switch the service form to a specific car and pull its oil/km defaults so
@@ -236,12 +296,27 @@ export default function AdminPage() {
     setSearch({ status: "loading", plate: trimmed });
     setLastCreated(null);
     setCreateError(null);
+    setWalletPush(null);
     setHistory([]);
     try {
       const customer = await carServiceOps.findCustomerByPlate(trimmed);
       applyCustomer(customer);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
+        // No customer with this plate — it may be an admin-registered car whose
+        // owner hasn't claimed it yet. Those can still receive service records.
+        try {
+          const unclaimedCars = await carServiceOps.unclaimedCars(trimmed);
+          const match = (Array.isArray(unclaimedCars) ? unclaimedCars : []).find(
+            (c) => normalizePlate(c.plateNumber) === trimmed
+          );
+          if (match) {
+            applyUnclaimedCar(match);
+            return;
+          }
+        } catch {
+          // Fall through to the regular not-found message.
+        }
         setSearch({ status: "not_found", plate: trimmed });
       } else if (err instanceof ApiError && err.status === 401) {
         logout();
@@ -254,18 +329,60 @@ export default function AdminPage() {
     }
   }
 
+  // Load a history record into the maintenance form so it can be corrected and
+  // saved back via PUT instead of creating a new record.
+  function startEditRecord(rec: MaintenanceRecord) {
+    setEditingRecord(rec);
+    setSelectedServiceId(rec.serviceItemId ?? null);
+    setWorkDescription(rec.workDescription ?? "");
+    setOilBrand(rec.oilBrand || "");
+    setOilType(rec.oilType || "");
+    setOilLiters(rec.oilLiters != null ? String(rec.oilLiters) : "");
+    setServiceKm(rec.serviceKm != null ? String(rec.serviceKm) : "");
+    setNextServiceKm(rec.nextServiceKm != null ? String(rec.nextServiceKm) : "");
+    setOilFilterChanged(rec.oilFilterChanged);
+    setFuelFilterChanged(rec.fuelFilterChanged);
+    setAirFilterChanged(rec.airFilterChanged);
+    setCabinFilterChanged(rec.cabinFilterChanged);
+    setServiceDate(rec.serviceDate);
+    setNextServiceDate(rec.nextServiceDate ?? "");
+    setLastCreated(null);
+    setCreateError(null);
+    setWalletPush(null);
+  }
+
+  function cancelEditRecord() {
+    setEditingRecord(null);
+    setWorkDescription("");
+    setOilLiters("");
+    setOilFilterChanged(false);
+    setFuelFilterChanged(false);
+    setAirFilterChanged(false);
+    setCabinFilterChanged(false);
+    setServiceDate(new Date().toISOString().slice(0, 10));
+    setNextServiceDate("");
+    setCreateError(null);
+  }
+
   async function createMaintenance(event: React.FormEvent) {
     event.preventDefault();
-    if (search.status !== "found") return;
+    if (search.status !== "found" && search.status !== "found_unclaimed") return;
     if (selectedServiceId == null) {
       setCreateError("Zəhmət olmasa xidmət seçin.");
       return;
     }
+    const fallbackPlate =
+      search.status === "found"
+        ? search.customer.plateNumber
+        : search.car.plateNumber;
+    // An edited record stays bound to its own car regardless of the selector.
+    const targetPlate = editingRecord
+      ? editingRecord.customerPlateNumber
+      : serviceCarPlate || fallbackPlate;
     setCreateError(null);
     setCreating(true);
     try {
-      const record = await carServiceOps.createMaintenance({
-        plateNumber: serviceCarPlate || search.customer.plateNumber,
+      const data = {
         serviceItemId: selectedServiceId,
         workDescription: workDescription.trim(),
         oilBrand: isOilChange ? oilBrand.trim() : "",
@@ -277,10 +394,33 @@ export default function AdminPage() {
         fuelFilterChanged,
         airFilterChanged,
         cabinFilterChanged,
-        serviceDate
-      });
+        serviceDate,
+        nextServiceDate: nextServiceDate || undefined
+      };
+      const record = editingRecord
+        ? await carServiceOps.updateMaintenance(editingRecord.id, data)
+        : await carServiceOps.createMaintenance({
+            plateNumber: targetPlate,
+            ...data
+          });
+      setLastSavedMode(editingRecord ? "updated" : "created");
+      if (editingRecord) cancelEditRecord();
       setLastCreated(record);
-      void loadHistory(search.customer);
+      void loadHistory(targetPlate);
+      // Automatic wallet update: the record already persisted the new service
+      // data, so a bare scan just live-refreshes the customer's wallet card.
+      setWalletPush({ status: "pending" });
+      walletApi
+        .scan({ plateNumber: targetPlate })
+        .then((res) =>
+          setWalletPush({
+            status: "ok",
+            appleDevicesRegistered: res.appleDevicesRegistered ?? 0,
+            applePushesSent: res.applePushesSent,
+            googleUpdated: res.googleUpdated
+          })
+        )
+        .catch(() => setWalletPush({ status: "error" }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         logout();
@@ -294,11 +434,11 @@ export default function AdminPage() {
     }
   }
 
-  async function loadHistory(forCustomer: UserProfile) {
+  async function loadHistory(plateNumber: string) {
     setHistoryLoading(true);
     try {
       const records = await carServiceOps.maintenanceHistory({
-        plateNumber: forCustomer.plateNumber
+        plateNumber
       });
       setHistory(Array.isArray(records) ? records : []);
     } catch (err) {
@@ -356,6 +496,7 @@ export default function AdminPage() {
   }
 
   const customer = search.status === "found" ? search.customer : null;
+  const unclaimedCar = search.status === "found_unclaimed" ? search.car : null;
   const customerDisplayName = customer
     ? customer.fullName?.trim() || customer.plateNumber || customer.email || "—"
     : "";
@@ -509,6 +650,8 @@ export default function AdminPage() {
           {activeSection === "oils" && (
             <OilCatalogPanel onUnauthorized={logout} />
           )}
+
+          {activeSection === "wallet-scan" && <WalletScanPanel />}
 
           {activeSection === "customers" && isOwner && (
             <CustomersPanel onUnauthorized={logout} />
@@ -747,6 +890,92 @@ export default function AdminPage() {
                       </div>
                     </div>
                   )}
+
+                  {unclaimedCar && (
+                    <div className="rounded-xl border border-dashed border-amber-500/30 bg-ink-900/60 overflow-hidden">
+                      <div className="flex items-center gap-4 p-5 border-b border-white/5">
+                        <span className="grid h-12 w-12 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
+                          <UserRound className="h-5 w-5" />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <strong className="block text-white truncate">
+                            Anonim sahib
+                          </strong>
+                          {unclaimedCar.ownerPhoneNumber && (
+                            <a
+                              href={`tel:${unclaimedCar.ownerPhoneNumber}`}
+                              className="inline-flex items-center gap-1.5 text-sm text-ink-400 hover:text-amber-300"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              {unclaimedCar.ownerPhoneNumber}
+                            </a>
+                          )}
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-medium text-amber-300 shrink-0">
+                          <AlertCircle className="h-3 w-3" />
+                          Sahibsiz · claim gözləyir
+                        </span>
+                      </div>
+
+                      <div className="p-5 space-y-4">
+                        <div className="rounded-xl border-hairline bg-ink-900/60 p-4">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="min-w-0">
+                              <div className="text-[10px] uppercase tracking-[0.18em] text-ink-500">
+                                {unclaimedCar.year ?? ""}
+                              </div>
+                              <strong className="block text-white truncate text-sm mt-0.5">
+                                {[unclaimedCar.carBrand, unclaimedCar.brandModel]
+                                  .filter(Boolean)
+                                  .join(" ") || "Avtomobil"}
+                              </strong>
+                            </div>
+                            <span className="inline-flex items-stretch rounded-lg border-hairline bg-ink-950 overflow-hidden shrink-0">
+                              <span className="grid place-items-center px-1.5 bg-amber-500/15 text-amber-300 text-[9px] font-mono font-bold border-r border-white/5">
+                                AZ
+                              </span>
+                              <span className="px-2 py-1 text-xs font-mono font-bold tracking-wider text-white">
+                                {unclaimedCar.plateNumber}
+                              </span>
+                            </span>
+                          </div>
+                          <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs">
+                            <div>
+                              <dt className="text-ink-500">Yürüş</dt>
+                              <dd className="text-white">
+                                {unclaimedCar.currentKm != null
+                                  ? formatKm(unclaimedCar.currentKm)
+                                  : "—"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-ink-500">Yağ</dt>
+                              <dd className="text-white truncate">
+                                {unclaimedCar.oilBrand || "—"}
+                                {unclaimedCar.oilType ? ` · ${unclaimedCar.oilType}` : ""}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-ink-500">Son servis</dt>
+                              <dd className="text-white">
+                                {formatDate(unclaimedCar.lastServiceDate)}
+                              </dd>
+                            </div>
+                          </dl>
+                          {unclaimedCar.vinCode && (
+                            <div className="mt-3 text-[11px] font-mono text-ink-400">
+                              VIN: {unclaimedCar.vinCode}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-ink-400">
+                          Bu avtomobil qeydiyyatdadır, amma sahibi hələ tətbiqdə claim
+                          etməyib. Servis qeydi əlavə edə bilərsiniz — sahibi claim
+                          edəndə tarixçə avtomatik onun hesabına bağlanacaq.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -767,7 +996,11 @@ export default function AdminPage() {
                       <CheckCircle2 className="h-5 w-5" />
                     </span>
                     <div>
-                      <strong className="text-emerald-200">Servis qeydi yaradıldı</strong>
+                      <strong className="text-emerald-200">
+                        {lastSavedMode === "updated"
+                          ? "Servis qeydi yeniləndi"
+                          : "Servis qeydi yaradıldı"}
+                      </strong>
                       <p className="text-sm text-emerald-100/70">
                         ID #{lastCreated.id} · @{lastCreated.carServiceUsername}
                       </p>
@@ -791,7 +1024,15 @@ export default function AdminPage() {
                           ]
                         : []),
                       { dt: "Km", dd: formatKm(lastCreated.serviceKm) },
-                      { dt: "Tarix", dd: formatDate(lastCreated.serviceDate) }
+                      { dt: "Tarix", dd: formatDate(lastCreated.serviceDate) },
+                      ...(lastCreated.nextServiceDate
+                        ? [
+                            {
+                              dt: "Növbəti tarix",
+                              dd: formatDate(lastCreated.nextServiceDate)
+                            }
+                          ]
+                        : [])
                     ].map((row) => (
                       <div key={row.dt}>
                         <dt className="text-[10px] uppercase tracking-[0.18em] text-emerald-300/70">
@@ -808,10 +1049,39 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </dl>
+
+                  {walletPush && (
+                    <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-xs">
+                      <Wallet className="h-4 w-4 shrink-0 text-emerald-300/70" />
+                      {walletPush.status === "pending" && (
+                        <span className="inline-flex items-center gap-2 text-emerald-100/70">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Wallet kartı yenilənir…
+                        </span>
+                      )}
+                      {walletPush.status === "ok" && (
+                        <span className="text-emerald-100/90">
+                          Wallet kartı yeniləndi — Apple:{" "}
+                          {walletPush.applePushesSent > 0
+                            ? `${walletPush.applePushesSent} cihaz`
+                            : walletPush.appleDevicesRegistered > 0
+                              ? `push alınmadı (${walletPush.appleDevicesRegistered} cihaz qeydiyyatlı)`
+                              : "qeydiyyatlı cihaz yoxdur"}
+                          , Google: {walletPush.googleUpdated ? "bəli" : "xeyr"}
+                        </span>
+                      )}
+                      {walletPush.status === "error" && (
+                        <span className="text-amber-200/90">
+                          Wallet kartını avtomatik yeniləmək mümkün olmadı —
+                          "Wallet skan" bölməsindən əl ilə yeniləyə bilərsiniz.
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {customer && (
+              {(customer || unclaimedCar) && (
                 <div className="rounded-2xl border-hairline bg-ink-900/40 p-6">
                   <div className="flex items-center justify-between gap-4 mb-5">
                     <div className="flex items-center gap-2.5">
@@ -836,7 +1106,9 @@ export default function AdminPage() {
 
                   {!historyLoading && history.length === 0 ? (
                     <div className="rounded-xl border-hairline border-dashed bg-ink-900/40 p-6 text-center text-sm text-ink-400">
-                      Bu müştəri üçün hələ servis qeydi yoxdur.
+                      {unclaimedCar
+                        ? "Bu avtomobil üçün hələ servis qeydi yoxdur."
+                        : "Bu müştəri üçün hələ servis qeydi yoxdur."}
                     </div>
                   ) : (
                     <ol className="space-y-3">
@@ -864,10 +1136,26 @@ export default function AdminPage() {
                                   </span>
                                 )}
                               </div>
-                              <span className="inline-flex items-center gap-1 text-xs text-ink-400 shrink-0">
-                                <Calendar className="h-3 w-3" />
-                                {formatDate(rec.serviceDate)}
-                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="inline-flex items-center gap-1 text-xs text-ink-400">
+                                  <Calendar className="h-3 w-3" />
+                                  {formatDate(rec.serviceDate)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditRecord(rec)}
+                                  aria-label="Servis qeydini redaktə et"
+                                  title="Servis qeydini redaktə et"
+                                  className={cn(
+                                    "grid h-7 w-7 place-items-center rounded-lg transition-colors",
+                                    editingRecord?.id === rec.id
+                                      ? "bg-brand-500/15 text-brand-300"
+                                      : "text-ink-400 hover:bg-white/5 hover:text-white"
+                                  )}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
 
                             {rec.workDescription && (
@@ -887,6 +1175,15 @@ export default function AdminPage() {
                                   <dt className="text-ink-500">Növbəti:</dt>
                                   <dd className="text-white">
                                     {formatKm(rec.nextServiceKm)}
+                                  </dd>
+                                </div>
+                              )}
+                              {rec.nextServiceDate && (
+                                <div className="inline-flex items-center gap-1.5">
+                                  <Calendar className="h-3 w-3 text-ink-500" />
+                                  <dt className="text-ink-500">Növbəti tarix:</dt>
+                                  <dd className="text-white">
+                                    {formatDate(rec.nextServiceDate)}
                                   </dd>
                                 </div>
                               )}
@@ -937,16 +1234,28 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between gap-4 mb-5">
                   <div>
                     <span className="text-[11px] uppercase tracking-[0.18em] text-ink-400">
-                      Yeni servis qeydi
+                      {editingRecord
+                        ? `Qeyd #${editingRecord.id} redaktəsi`
+                        : "Yeni servis qeydi"}
                     </span>
-                    <h3 className="text-lg font-semibold mt-0.5">Servis əlavə et</h3>
+                    <h3 className="text-lg font-semibold mt-0.5">
+                      {editingRecord ? "Servisi yenilə" : "Servis əlavə et"}
+                    </h3>
                   </div>
-                  <Plus className="h-5 w-5 text-ink-400" />
+                  {editingRecord ? (
+                    <Pencil className="h-5 w-5 text-brand-400" />
+                  ) : (
+                    <Plus className="h-5 w-5 text-ink-400" />
+                  )}
                 </div>
 
                 <form onSubmit={createMaintenance}>
                   <fieldset
-                    disabled={search.status !== "found" || creating}
+                    disabled={
+                      (search.status !== "found" &&
+                        search.status !== "found_unclaimed") ||
+                      creating
+                    }
                     className="flex flex-col gap-4 disabled:opacity-60"
                   >
                     <label className="block">
@@ -954,7 +1263,7 @@ export default function AdminPage() {
                         <Car className="inline h-3 w-3 mr-1 text-brand-400" />
                         Avtomobil
                       </span>
-                      {customer && customer.cars.length > 1 ? (
+                      {!editingRecord && customer && customer.cars.length > 1 ? (
                         <Select
                           value={serviceCarPlate || customer.plateNumber}
                           onChange={selectServiceCar}
@@ -968,7 +1277,13 @@ export default function AdminPage() {
                       ) : (
                         <input
                           type="text"
-                          value={customer ? serviceCarPlate || customer.plateNumber : ""}
+                          value={
+                            editingRecord?.customerPlateNumber ||
+                            serviceCarPlate ||
+                            customer?.plateNumber ||
+                            unclaimedCar?.plateNumber ||
+                            ""
+                          }
                           readOnly
                           placeholder="Əvvəl müştərini tapın"
                           className={cn(fieldClass, "font-mono tracking-wider")}
@@ -1055,7 +1370,29 @@ export default function AdminPage() {
                     )}
 
                     <label className="block">
-                      <span className={labelClass}>İş təsviri (opsional)</span>
+                      <span
+                        className={cn(labelClass, "flex items-center justify-between gap-2")}
+                      >
+                        İş təsviri (opsional)
+                        {isOilChange && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setWorkDescription((prev) => {
+                                const text = prev.trim();
+                                if (text.includes("Mühərrik yağı dəyişildi")) return prev;
+                                return text
+                                  ? `${text}\nMühərrik yağı dəyişildi`
+                                  : "Mühərrik yağı dəyişildi";
+                              })
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg border border-brand-500/30 bg-brand-500/10 px-2 py-1 text-[10px] font-semibold normal-case tracking-normal text-brand-200 hover:bg-brand-500/20 transition-colors"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Mühərrik yağı dəyişildi
+                          </button>
+                        )}
+                      </span>
                       <textarea
                         rows={2}
                         value={workDescription}
@@ -1143,19 +1480,34 @@ export default function AdminPage() {
                       </label>
                     </div>
 
-                    <label className="block">
-                      <span className={labelClass}>
-                        <Calendar className="inline h-3 w-3 mr-1 text-brand-400" />
-                        Tarix
-                      </span>
-                      <input
-                        type="date"
-                        value={serviceDate}
-                        onChange={(e) => setServiceDate(e.target.value)}
-                        required
-                        className={cn(fieldClass, "scheme-dark")}
-                      />
-                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="block">
+                        <span className={labelClass}>
+                          <Calendar className="inline h-3 w-3 mr-1 text-brand-400" />
+                          Tarix
+                        </span>
+                        <input
+                          type="date"
+                          value={serviceDate}
+                          onChange={(e) => setServiceDate(e.target.value)}
+                          required
+                          className={cn(fieldClass, "scheme-dark")}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className={labelClass}>
+                          <Calendar className="inline h-3 w-3 mr-1 text-brand-400" />
+                          Növbəti dəyişmə tarixi
+                        </span>
+                        <input
+                          type="date"
+                          value={nextServiceDate}
+                          min={serviceDate || undefined}
+                          onChange={(e) => setNextServiceDate(e.target.value)}
+                          className={cn(fieldClass, "scheme-dark")}
+                        />
+                      </label>
+                    </div>
 
                     {createError && (
                       <div
@@ -1169,13 +1521,22 @@ export default function AdminPage() {
 
                     <button
                       type="submit"
-                      disabled={creating || search.status !== "found"}
+                      disabled={
+                        creating ||
+                        (search.status !== "found" &&
+                          search.status !== "found_unclaimed")
+                      }
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold text-white shadow-glow transition-all"
                     >
                       {creating ? (
                         <>
                           <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                          Yaradılır…
+                          {editingRecord ? "Yenilənir…" : "Yaradılır…"}
+                        </>
+                      ) : editingRecord ? (
+                        <>
+                          <Pencil className="h-4 w-4" />
+                          Servis qeydini yenilə
                         </>
                       ) : (
                         <>
@@ -1184,6 +1545,17 @@ export default function AdminPage() {
                         </>
                       )}
                     </button>
+
+                    {editingRecord && (
+                      <button
+                        type="button"
+                        onClick={cancelEditRecord}
+                        disabled={creating}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border-hairline bg-white/5 hover:bg-white/10 disabled:opacity-50 px-5 py-3 text-sm font-medium text-ink-200 transition-colors"
+                      >
+                        Redaktəni ləğv et
+                      </button>
+                    )}
 
                     {search.status !== "found" && (
                       <p className="text-xs text-ink-400 text-center">
