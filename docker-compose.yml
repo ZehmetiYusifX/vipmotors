@@ -1,0 +1,20 @@
+# Production compose for the VIP Motors landing/frontend.
+# Runs ON the server at /opt/vipmotors-landing. Reproduces the old manual
+# `docker run … --env-file /root/frontend-env -p 3000:3000` — but the env_file
+# is now DECLARED here, so it can never be forgotten on a recreate (that omission
+# was the cause of the 2026-07 chat outage: GEMINI_API_KEY undefined in the
+# container -> Gemini "unregistered callers" error).
+#
+# The secret env file stays on the server OUTSIDE this repo (/root/frontend-env);
+# only its PATH is referenced here, never the values.
+
+services:
+  landing:
+    build: .
+    image: zahmatiyusif/vipmotors-landing:latest
+    container_name: vipmotors-landing
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - /root/frontend-env
